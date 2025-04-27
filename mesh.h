@@ -1,8 +1,11 @@
 #ifndef mesh_h
 #define mesh_h
 
-#include <vector>;
-#include <iostream>;
+#include <vector>
+#include <iostream>
+
+typedef struct HalfEdge HalfEdge;
+typedef struct Face Face;
 
 typedef struct {
     int x;
@@ -10,7 +13,7 @@ typedef struct {
     HalfEdge* halfEdge;                     // Pointeiro para uma semi-aresta que tem v como origem (halfEdge(v))
 } Vertice;
 
-typedef struct {
+typedef struct HalfEdge {
     Vertice* origin;                        // Ponteiro para o vértice de origem da semi-aresta (v)
     HalfEdge* twin;                         // Ponteiro para a semi-aresta oposta
     HalfEdge* next;                         // Ponteiro para a próxima semi-aresta na mesmo face
@@ -18,7 +21,7 @@ typedef struct {
     Face* leftFace;                         // Ponteiro para a face à esquerda da semi-aresta
 } HalfEdge;
 
-typedef struct {
+typedef struct Face {
     HalfEdge* halfEdge;                     // Pointeiro para uma semi-aresta que tem f como face esquerda
 } Face;
 
@@ -40,6 +43,9 @@ class Mesh {
             for (auto he : halfEdges) delete he;
         };
         void load();
+        void constructHalfEdges();
+        void constructFaces();
+        void constructVertices();
 
     private:
         unsigned int nVertices;
