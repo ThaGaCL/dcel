@@ -61,10 +61,10 @@ Face* Mesh::createNewFace(HalfEdge* he){
 void Mesh::printHalfEdge(HalfEdge* he){
     std::cout << "HalfEdge: " << he << std::endl;
     std::cout << "Origin: " << he->origin->x << " " << he->origin->y << std::endl;
-    std::cout << "Left Face: " << he->leftFace << std::endl;
-    std::cout << "Next: " << he->next << std::endl;
-    std::cout << "Prev: " << he->prev << std::endl;
-    std::cout << "Twin: " << he->twin << std::endl;
+    std::cout << "Left Face: " << he->leftFace->halfEdge << std::endl;
+    std::cout << "Next: " << he->next->origin->x << " " << he->next->origin->y << std::endl;
+    std::cout << "Prev: " << he->prev->origin->x << " " << he->prev->origin->y << std::endl;
+    std::cout << "Twin: " << he->twin->origin->x << " " << he->twin->origin->y << std::endl;
 }
 
 void printEdge(Edge* edge){
@@ -133,7 +133,7 @@ void Mesh::constructHalfEdges(){
     HalfEdge* twin;
     unsigned int size = edges.size();
 
-    for (unsigned int i = 0; i < size/2; i+=2){
+    for (unsigned int i = 0; i < size; i+=2){
         he = createHalfEdgeNode(i);
         twin = createHalfEdgeNode(i+1);
 
@@ -148,7 +148,7 @@ void Mesh::constructHalfEdges(){
     for (unsigned int i = 0; i < halfEdges.size(); i++){
         findNext(halfEdges[i]);
         findPrev(halfEdges[i]);
-        printHalfEdge(he);
+        printHalfEdge(halfEdges[i]);
     }
 }
 
@@ -160,12 +160,12 @@ void Mesh::findNext(HalfEdge* he){
     HalfEdge* twin = he->twin;
     HalfEdge* next = nullptr;
 
-    for (unsigned int i = 0; i < halfEdges.size(); i++){
-        if (halfEdges[i]->origin == twin->origin && halfEdges[i]->leftFace == he->leftFace){
-            next = halfEdges[i];
+    for (HalfEdge* h : halfEdges){
+        if (h->origin == twin->origin && h->leftFace == he->leftFace){
+            next = h;
             break;
         }
-    }
+    } 
 
     he->next = next;
 }
@@ -178,9 +178,9 @@ void Mesh::findPrev(HalfEdge* he){
     HalfEdge* twin = he->twin;
     HalfEdge* prev = nullptr;
 
-    for (unsigned int i = 0; i < halfEdges.size(); i++){
-        if (halfEdges[i]->origin == he->origin && halfEdges[i]->leftFace == twin->leftFace){
-            prev = halfEdges[i];
+    for (HalfEdge* h : halfEdges){
+        if (h->origin == he->origin && h->leftFace == twin->leftFace){
+            prev = h;
             break;
         }
     }
