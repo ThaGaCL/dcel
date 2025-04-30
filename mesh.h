@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <iostream>
+#include <unordered_map>
 
 typedef struct HalfEdge HalfEdge;
 typedef struct Face Face;
@@ -70,6 +71,7 @@ class Mesh {
         HALF_EDGES halfEdges;
         FACE_VERTICES faceVertices; 
         EDGES edges;                   
+		unordered_map<int, int> edgesMap;
 };
 
 #endif

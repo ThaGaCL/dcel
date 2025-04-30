@@ -82,7 +82,7 @@ void swap(Edge* &a, Edge* &b){
 
 /*
     constrói arestas comuns para servir de auxiliar na criação de semi-arestas
-*/
+
 void Mesh::constructEdges(){
     Edge* edge;
     int idx;
@@ -114,9 +114,33 @@ void Mesh::constructEdges(){
 
     constructHalfEdges();
 }
+*/
+
+void Mesh::constructEdges(){
+	Edge* edge;
+	int idxOrig;
+	int idxDest;
+	unsigned int size;
+
+	for (unsigned int i = 0; i < nFaces; i++){
+		size = faceVertices[i].size();
+		for(unsigned int j = 0; j < size; j++){
+			idxOrig = faceVertices[i][j] - 1;
+			idxDest = faceVertices[i][(j+1) % size] - 1;
+
+			edgesMap[idxOrig] = idxDest;
+			printf("idxOrig: %d; idxDest: %d\n", idxOrig, idxDest);
+		}			
+	}
+
+	constructHalfEdges();
+}
 
 HalfEdge* Mesh::createHalfEdgeNode(int idx){
     HalfEdge* he = new HalfEdge;
+	he->twin = NULL;
+	he->next = NULL;
+	he->prev = NULL;
     he->origin = edges[idx]->origin;
 
     if (!faceDoesExist(edges[idx]->faceIdx)){
@@ -128,6 +152,7 @@ HalfEdge* Mesh::createHalfEdgeNode(int idx){
     return he;
 }
 
+/*
 void Mesh::constructHalfEdges(){
     HalfEdge* he;
     HalfEdge* twin;
@@ -150,6 +175,18 @@ void Mesh::constructHalfEdges(){
         findPrev(halfEdges[i]);
         printHalfEdge(halfEdges[i]);
     }
+}
+*/
+
+void Mesh::constructHalfEdges(){
+	HalfEdge* he;
+	HalfEdge* twin;
+
+	for (auto pair : edgesMap){
+		//he = createHalfEdgeNode();	
+		// e se em vez do hash ser <int, int> ser do tipo <int, edge> ?
+		// assim não perderia a propriedade O(1) na busca nem as faces....
+	}
 }
 
 /*
