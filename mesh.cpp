@@ -1,5 +1,15 @@
 #include "mesh.h"
 
+bool Mesh::checkIfVertexExists(int x, int y){
+    for (Vertice* v : vertices){
+        if (v->x == x && v->y == y){
+            return true;
+        }
+    }
+    return false;
+}
+
+
 void Mesh::load(){
     // A primeira linha tem dois n´umeros inteiros, n e f, separados por um espaço. 
     // O primeiro é o número de vértices, n, e o segundo é o numero de faces, f , da malha.
@@ -16,9 +26,17 @@ void Mesh::load(){
     scanf("%u %u", &nVertices, &nFaces);
 
     for (unsigned int i = 0; i < nVertices; i++) {
+        int x, y;
+        scanf("%d %d", &x, &y);
+
+        if (checkIfVertexExists(x, y))
+            continue;
+
         v = new Vertice;
-        scanf("%d %d", &v->x, &v->y);
+        v->x = x;
+        v->y = y;
         v->halfEdge = nullptr;
+        v->idx = i;
         vertices.push_back(v);
     }
 
@@ -49,9 +67,10 @@ bool Mesh::faceDoesExist(int idx){
     return false;
 }
 
-Face* Mesh::createNewFace(HalfEdge* he){
+Face* Mesh::createNewFace(int idx){
     Face* face = new Face;
-    face->halfEdge = he; 
+    face->halfEdge = nullptr; 
+    face->idx = idx;
 
     faces.push_back(face);
 
@@ -61,18 +80,19 @@ Face* Mesh::createNewFace(HalfEdge* he){
 void Mesh::printHalfEdge(HalfEdge* he){
     std::cout << "HalfEdge: " << he << std::endl;
     std::cout << "Origin: " << he->origin->x << " " << he->origin->y << std::endl;
-    std::cout << "Left Face: " << he->leftFace->halfEdge << std::endl;
+    std::cout << "Left Face: " << he->leftFace << std::endl;
     std::cout << "Next: " << he->next->origin->x << " " << he->next->origin->y << std::endl;
-    std::cout << "Prev: " << he->prev->origin->x << " " << he->prev->origin->y << std::endl;
+    if (he->prev) std::cout << "Prev: " << he->prev->origin->x << " " << he->prev->origin->y << std::endl;
+    else std::cout << "Prev: NULL" << std::endl;
     std::cout << "Twin: " << he->twin->origin->x << " " << he->twin->origin->y << std::endl;
 }
 
-void printEdge(Edge* edge){
-    std::cout << "Origin: " << edge->origin->x << " " << edge->origin->y << std::endl;
-    std::cout << "Dest: " << edge->dest->x << " " << edge->dest->y << std::endl;
-    std::cout << "Face Index: " << edge->faceIdx << std::endl;
-    std::cout << std::endl;
-}
+// void printEdge(Edge* edge){
+//     std::cout << "Origin: " << edge->origin->x << " " << edge->origin->y << std::endl;
+//     std::cout << "Dest: " << edge->dest->x << " " << edge->dest->y << std::endl;
+//     std::cout << "Face Index: " << edge->faceIdx << std::endl;
+//     std::cout << std::endl;
+// }
 
 void swap(Edge* &a, Edge* &b){
     Edge* temp = a;
@@ -124,69 +144,73 @@ void Mesh::constructEdges(){
 
 	for (unsigned int i = 0; i < nFaces; i++){
 		size = faceVertices[i].size();
+        createNewFace(i);
+
 		for(unsigned int j = 0; j < size; j++){
 			idxOrig = faceVertices[i][j] - 1;
 			idxDest = faceVertices[i][(j+1) % size] - 1;
+            edge = new Edge;
+            edge->dest = idxDest;
+            edge->faceIdx = i;
 
-			edgesMap[idxOrig] = idxDest;
-			printf("idxOrig: %d; idxDest: %d\n", idxOrig, idxDest);
+			edgesMap[idxOrig] = edge;
 		}			
 	}
 
 	constructHalfEdges();
 }
 
-HalfEdge* Mesh::createHalfEdgeNode(int idx){
+HalfEdge* Mesh::createHalfEdgeNode(Vertice* origin, int faceIdx, int idx){
     HalfEdge* he = new HalfEdge;
 	he->twin = NULL;
 	he->next = NULL;
 	he->prev = NULL;
-    he->origin = edges[idx]->origin;
+    he->origin = origin;
+    he->idx = idx;
 
-    if (!faceDoesExist(edges[idx]->faceIdx)){
-        he->leftFace = createNewFace(he);
-    } else {
-        he->leftFace = faces[edges[idx]->faceIdx];
-    }
+    he->leftFace = faces[faceIdx];
+    faces[faceIdx]->halfEdge = he;
 
     return he;
 }
 
-/*
 void Mesh::constructHalfEdges(){
-    HalfEdge* he;
-    HalfEdge* twin;
-    unsigned int size = edges.size();
+	HalfEdge* he;
+	HalfEdge* twin;
+    int idx = 0;
 
-    for (unsigned int i = 0; i < size; i+=2){
-        he = createHalfEdgeNode(i);
-        twin = createHalfEdgeNode(i+1);
+	std::unordered_map<int, Edge*> edgesToProcess = edgesMap;
+    for (auto it = edgesToProcess.begin(); it != edgesToProcess.end();)
+    {
+        int origin = it->first;
+        int dest = it->second->dest;
+
+        if (origin > dest)
+        {
+            ++it; 
+            continue;
+        }
+
+        he = createHalfEdgeNode(vertices[origin], it->second->faceIdx, idx++);
+        twin = createHalfEdgeNode(vertices[dest], edgesMap[dest]->faceIdx, idx++);
 
         he->twin = twin;
         twin->twin = he;
 
         halfEdges.push_back(he);
         halfEdges.push_back(twin);
+
+        it = edgesToProcess.erase(it);
     }
 
-    // Faz a transversal da lista de semi-arestas para encontrar a próxima e a anterior
-    for (unsigned int i = 0; i < halfEdges.size(); i++){
-        findNext(halfEdges[i]);
-        findPrev(halfEdges[i]);
-        printHalfEdge(halfEdges[i]);
+    for (HalfEdge *he : halfEdges){
+        findNext(he);
     }
-}
-*/
 
-void Mesh::constructHalfEdges(){
-	HalfEdge* he;
-	HalfEdge* twin;
-
-	for (auto pair : edgesMap){
-		//he = createHalfEdgeNode();	
-		// e se em vez do hash ser <int, int> ser do tipo <int, edge> ?
-		// assim não perderia a propriedade O(1) na busca nem as faces....
-	}
+    for (HalfEdge *he : halfEdges){
+        findPrev(he);
+        printHalfEdge(he);
+    }
 }
 
 /*
@@ -198,7 +222,7 @@ void Mesh::findNext(HalfEdge* he){
     HalfEdge* next = nullptr;
 
     for (HalfEdge* h : halfEdges){
-        if (h->origin == twin->origin && h->leftFace == he->leftFace){
+        if (h->leftFace == he->leftFace && h->origin == twin->origin){
             next = h;
             break;
         }
@@ -216,7 +240,7 @@ void Mesh::findPrev(HalfEdge* he){
     HalfEdge* prev = nullptr;
 
     for (HalfEdge* h : halfEdges){
-        if (h->origin == he->origin && h->leftFace == twin->leftFace){
+        if (h->leftFace == he->leftFace && h->next == he){
             prev = h;
             break;
         }

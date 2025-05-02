@@ -4,6 +4,7 @@
 #include <vector>
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 
 typedef struct HalfEdge HalfEdge;
 typedef struct Face Face;
@@ -11,16 +12,18 @@ typedef struct Face Face;
 typedef struct {
     int x;
     int y;
+    int idx;                        
     HalfEdge* halfEdge;                     // Pointeiro para uma semi-aresta que tem v como origem (halfEdge(v))
 } Vertice;
 
 typedef struct {
-    Vertice* origin;                        // Ponteiro para o vértice de origem da aresta (v)
-    Vertice* dest;                          // Ponteiro para o vértice de destino da aresta (u)
+    // Vertice* origin;                        // Ponteiro para o vértice de origem da aresta (v)
+    int dest;                          // Ponteiro para o vértice de destino da aresta (u)
     int faceIdx;
 } Edge;
 
 typedef struct HalfEdge {
+    int idx;
     Vertice* origin;                        // Ponteiro para o vértice de origem da semi-aresta (v)
     HalfEdge* twin;                         // Ponteiro para a semi-aresta oposta
     HalfEdge* next;                         // Ponteiro para a próxima semi-aresta na mesmo face
@@ -29,6 +32,7 @@ typedef struct HalfEdge {
 } HalfEdge;
 
 typedef struct Face {
+    int idx;                          
     HalfEdge* halfEdge;                     // Pointeiro para uma semi-aresta que tem f como face esquerda
 } Face;
 
@@ -60,8 +64,9 @@ class Mesh {
         unsigned int nEdges;
 
         bool faceDoesExist(int idx);
-        Face* createNewFace(HalfEdge* he);
-        HalfEdge* createHalfEdgeNode(int idx);
+        bool checkIfVertexExists(int x, int y);
+        Face* createNewFace(int idx);
+        HalfEdge* createHalfEdgeNode(Vertice* origin, int faceIdx, int idx);
         void findNext(HalfEdge* he);
         void findPrev(HalfEdge* he);
         void printHalfEdge(HalfEdge* he);
@@ -71,7 +76,7 @@ class Mesh {
         HALF_EDGES halfEdges;
         FACE_VERTICES faceVertices; 
         EDGES edges;                   
-		unordered_map<int, int> edgesMap;
+		unordered_map<int, Edge*> edgesMap;
 };
 
 #endif
