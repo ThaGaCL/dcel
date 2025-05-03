@@ -10,6 +10,22 @@ bool Mesh::checkIfVertexExists(int x, int y){
 }
 
 
+Vertice* Mesh::createNewVertex(int x, int y, int idx){
+    Vertice* v = nullptr;
+
+    if (checkIfVertexExists(x, y))
+        return nullptr;
+
+    v = new Vertice;
+    v->x = x;
+    v->y = y;
+    v->halfEdge = nullptr;
+    v->idx = idx;
+    vertices.push_back(v);
+
+    return v;
+}
+
 void Mesh::load(){
     // A primeira linha tem dois n´umeros inteiros, n e f, separados por um espaço. 
     // O primeiro é o número de vértices, n, e o segundo é o numero de faces, f , da malha.
@@ -18,7 +34,6 @@ void Mesh::load(){
     // daí, as próximas f linhas contém os índices dos vértices de cada face, separados por espaçcos, uma face por
     // linha.
 
-    Vertice* v;
     Face* f;
     vector<int> faceVertices;
     int vertexIndex;
@@ -29,15 +44,7 @@ void Mesh::load(){
         int x, y;
         scanf("%d %d", &x, &y);
 
-        if (checkIfVertexExists(x, y))
-            continue;
-
-        v = new Vertice;
-        v->x = x;
-        v->y = y;
-        v->halfEdge = nullptr;
-        v->idx = i;
-        vertices.push_back(v);
+        createNewVertex(x, y, i);
     }
 
     for (unsigned int i = 0; i < nFaces; i++) {
@@ -93,47 +100,8 @@ void Mesh::printHalfEdge(HalfEdge* he){
 //     std::cout << "Face Index: " << edge->faceIdx << std::endl;
 //     std::cout << std::endl;
 // }
-
-void swap(Edge* &a, Edge* &b){
-    Edge* temp = a;
-    a = b;
-    b = temp;
-}
-
 /*
     constrói arestas comuns para servir de auxiliar na criação de semi-arestas
-
-void Mesh::constructEdges(){
-    Edge* edge;
-    int idx;
-
-    for (unsigned int i = 0; i < nFaces; i++){
-        for (unsigned int j = 0; j < faceVertices[i].size(); j++){
-            edge = new Edge;
-
-            idx = faceVertices[i][j] - 1;           // os indices começam em 0 e as faces em 1
-            edge->origin = vertices[idx];
-
-            idx = faceVertices[i][(j+1) % faceVertices[i].size()] - 1;
-            edge->dest = vertices[idx];
-
-            edge->faceIdx = i;
-
-            edges.push_back(edge);
-        }
-    }
-
-    // 'ordena' as arestas para que, por exemplo, a aresta (v1, v2) fique antes da aresta (v2, v1)
-    for (unsigned int i = 0; i < edges.size(); i++){
-        for (unsigned int j = i+1; j < edges.size(); j++){
-            if (edges[i]->origin == edges[j]->dest && edges[i]->dest == edges[j]->origin){
-                swap(edges[i+1], edges[j]);
-            }
-        }
-    }
-
-    constructHalfEdges();
-}
 */
 
 void Mesh::constructEdges(){
@@ -153,7 +121,7 @@ void Mesh::constructEdges(){
             edge->dest = idxDest;
             edge->faceIdx = i;
 
-			edgesMap[idxOrig] = edge;
+			edgesMap[idxOrig].push_back(edge);
 		}			
 	}
 
@@ -174,44 +142,91 @@ HalfEdge* Mesh::createHalfEdgeNode(Vertice* origin, int faceIdx, int idx){
     return he;
 }
 
+// void Mesh::constructHalfEdges(){
+// 	HalfEdge* he;
+// 	HalfEdge* twin;
+//     int idx = 0;
+
+// 	std::unordered_map<int, Edge*> edgesToProcess = edgesMap;
+//     for (auto it = edgesToProcess.begin(); it != edgesToProcess.end();)
+//     {
+//         int origin = it->first;
+//         int dest = it->second->dest;
+
+//         if (origin > dest)
+//         {
+//             ++it; 
+//             continue;
+//         }
+
+//         he = createHalfEdgeNode(vertices[origin], it->second->faceIdx, idx++);
+//         twin = createHalfEdgeNode(vertices[dest], edgesMap[dest]->faceIdx, idx++);
+
+//         he->twin = twin;
+//         twin->twin = he;
+
+//         halfEdges.push_back(he);
+//         halfEdges.push_back(twin);
+
+//         it = edgesToProcess.erase(it);
+//     }
+
+//     for (HalfEdge *he : halfEdges){
+//         findNext(he);
+//     }
+
+//     for (HalfEdge *he : halfEdges){
+//         findPrev(he);
+//         printHalfEdge(he);
+//     }
+// }
+
 void Mesh::constructHalfEdges(){
-	HalfEdge* he;
-	HalfEdge* twin;
+    HalfEdge* he;
+    HalfEdge* twin;
     int idx = 0;
 
-	std::unordered_map<int, Edge*> edgesToProcess = edgesMap;
-    for (auto it = edgesToProcess.begin(); it != edgesToProcess.end();)
-    {
-        int origin = it->first;
-        int dest = it->second->dest;
+    std::unordered_map<int, vector<Edge*>> edgesToProcess = edgesMap;
+    for (auto edgeVector = edgesToProcess.begin(); edgeVector != edgesToProcess.end(); ++edgeVector) {
+    int origin = edgeVector->first;
+    auto& edgeList = edgeVector->second;
 
-        if (origin > dest)
-        {
-            ++it; 
-            continue;
+    for (Edge* edge : edgeList) {
+        int dest = edge->dest;
+
+        // Only process each edge in one direction
+        if (origin > dest) continue;
+
+        HalfEdge* he = createHalfEdgeNode(vertices[origin], edge->faceIdx, idx++);
+        HalfEdge* twin = nullptr;
+
+        // Search for the twin (without erasing it)
+        if (edgesToProcess.count(dest)) {
+            for (Edge* candidate : edgesToProcess[dest]) {
+                if (candidate->dest == origin) {
+                    twin = createHalfEdgeNode(vertices[dest], candidate->faceIdx, idx++);
+                    break;
+                }
+            }
         }
 
-        he = createHalfEdgeNode(vertices[origin], it->second->faceIdx, idx++);
-        twin = createHalfEdgeNode(vertices[dest], edgesMap[dest]->faceIdx, idx++);
-
+        // If no twin found, still proceed (you said not to handle the missing case)
         he->twin = twin;
-        twin->twin = he;
+        if (twin) twin->twin = he;
 
         halfEdges.push_back(he);
-        halfEdges.push_back(twin);
+        if (twin) halfEdges.push_back(twin);
 
-        it = edgesToProcess.erase(it);
-    }
-
-    for (HalfEdge *he : halfEdges){
-        findNext(he);
-    }
-
-    for (HalfEdge *he : halfEdges){
-        findPrev(he);
-        printHalfEdge(he);
+        // Debug output
+        printf("HalfEdge: %d, origin - x: %d, y: %d\n", he->idx, he->origin->x, he->origin->y);
+        if (twin)
+            printf("Twin:     %d, origin - x: %d, y: %d\n", twin->idx, twin->origin->x, twin->origin->y);
     }
 }
+
+
+}
+
 
 /*
     Para saber o próximo, é necessário checar a origem da simétrica da semi-aresta i

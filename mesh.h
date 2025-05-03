@@ -67,6 +67,7 @@ class Mesh {
         bool checkIfVertexExists(int x, int y);
         Face* createNewFace(int idx);
         HalfEdge* createHalfEdgeNode(Vertice* origin, int faceIdx, int idx);
+        Vertice* createNewVertex(int x, int y, int idx);
         void findNext(HalfEdge* he);
         void findPrev(HalfEdge* he);
         void printHalfEdge(HalfEdge* he);
@@ -76,7 +77,7 @@ class Mesh {
         HALF_EDGES halfEdges;
         FACE_VERTICES faceVertices; 
         EDGES edges;                   
-		unordered_map<int, Edge*> edgesMap;
+		unordered_map<int, vector<Edge*>> edgesMap;
 };
 
 #endif
