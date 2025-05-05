@@ -182,8 +182,6 @@ HalfEdge* Mesh::createHalfEdgeNode(Vertice* origin, int faceIdx, int idx){
 // }
 
 void Mesh::constructHalfEdges(){
-    HalfEdge* he;
-    HalfEdge* twin;
     int idx = 0;
 
     std::unordered_map<int, vector<Edge*>> edgesToProcess = edgesMap;
@@ -194,13 +192,12 @@ void Mesh::constructHalfEdges(){
     for (Edge* edge : edgeList) {
         int dest = edge->dest;
 
-        // Only process each edge in one direction
         if (origin > dest) continue;
 
         HalfEdge* he = createHalfEdgeNode(vertices[origin], edge->faceIdx, idx++);
         HalfEdge* twin = nullptr;
 
-        // Search for the twin (without erasing it)
+        // Como um vértice pode ter mais de uma semi-aresta, é necessário verificar todos os candidatos 
         if (edgesToProcess.count(dest)) {
             for (Edge* candidate : edgesToProcess[dest]) {
                 if (candidate->dest == origin) {
@@ -210,21 +207,22 @@ void Mesh::constructHalfEdges(){
             }
         }
 
-        // If no twin found, still proceed (you said not to handle the missing case)
         he->twin = twin;
         if (twin) twin->twin = he;
 
         halfEdges.push_back(he);
         if (twin) halfEdges.push_back(twin);
 
-        // Debug output
-        printf("HalfEdge: %d, origin - x: %d, y: %d\n", he->idx, he->origin->x, he->origin->y);
-        if (twin)
-            printf("Twin:     %d, origin - x: %d, y: %d\n", twin->idx, twin->origin->x, twin->origin->y);
     }
-}
+    }
+    for (HalfEdge *he : halfEdges){
+        findNext(he);
+    }
 
-
+    for (HalfEdge *he : halfEdges){
+        findPrev(he);
+        printHalfEdge(he);
+    }
 }
 
 
@@ -251,7 +249,6 @@ void Mesh::findNext(HalfEdge* he){
     e então a simétrica que sai do mesmo vértice tem que ter a mesma face que a semi-aresta i
 */
 void Mesh::findPrev(HalfEdge* he){
-    HalfEdge* twin = he->twin;
     HalfEdge* prev = nullptr;
 
     for (HalfEdge* h : halfEdges){
