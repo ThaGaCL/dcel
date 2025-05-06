@@ -57,6 +57,7 @@ class Mesh {
         void load();
         void constructHalfEdges();
         void constructEdges();
+        bool isTopologyValid();
 
     private:
         unsigned int nVertices;
@@ -65,9 +66,15 @@ class Mesh {
 
         bool faceDoesExist(int idx);
         bool checkIfVertexExists(int x, int y);
+        bool isOpen();
+        bool isSubdivPlanar();
+        bool isOverlapped();
+        bool autoIntersect(Face* f);
+
         Face* createNewFace(int idx);
         HalfEdge* createHalfEdgeNode(Vertice* origin, int faceIdx, int idx);
         Vertice* createNewVertex(int x, int y, int idx);
+
         void findNext(HalfEdge* he);
         void findPrev(HalfEdge* he);
         void printHalfEdge(HalfEdge* he);
