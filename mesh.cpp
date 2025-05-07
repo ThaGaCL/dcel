@@ -292,15 +292,25 @@ bool Mesh::isSubdivPlanar(){
     return false; 
 }
 
-void rayCasting(){}
-
 /*
     Identifica se há auto-intersecção com o algoritmo ray-casting
 */
+// bool Mesh::autoIntersect(Face* f){
+//     HalfEdge* temp = f->halfEdge;
+
+//     while (temp->next != f->halfEdge){
+//         // ray casting ou sweep line
+//         continue;
+//     }
+
+//     return false;
+// }
 
 bool Mesh::isOverlapped(){
+    SweepLine* sl = new SweepLine();
+
     for (Face* f : faces){
-        if (autoIntersect(f))
+        if (sl->findIntersection(f->halfEdge))
             return true;
     }
 
