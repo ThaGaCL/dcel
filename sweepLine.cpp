@@ -1,0 +1,141 @@
+#include "sweepLine.h"
+
+// void print_priority_queue(std::priority_queue<Vertice*, std::vector<Vertice*>, EventComparator>& pq) {
+//     while (!pq.empty()) {
+//         Vertice* v = pq.top();
+//         std::cout << "(" << v->x << ", " << v->y << ") ";
+//         pq.pop();  // Removes the top element
+//     }
+//     std::cout << std::endl;
+// }
+
+Event* createNewEvent(Vertice* v, EventType t, HalfEdge* h){
+    Event* e = new Event();
+    e->vertex = v;
+    e->type = t;
+    e->halfEdge = h;
+
+    return e;
+}
+
+void SweepLine::insertHalfEdgesHeap(HalfEdge* h) {
+    if (!h) return;
+
+    Vertice* left = h->origin;
+    Vertice* right = h->twin->origin;    
+
+    if ((left->x < right->x) || ((left->x == right->x) && (left->y < right->y))){
+        eventQueue.push(createNewEvent(left, LEFT_ENDPOINT, h));
+        eventQueue.push(createNewEvent(right, RIGHT_ENDPOINT, h));
+    } else {
+        eventQueue.push(createNewEvent(left, RIGHT_ENDPOINT, h->twin));
+        eventQueue.push(createNewEvent(right, LEFT_ENDPOINT, h->twin));
+    }
+
+}
+
+int orientation(Vertice* a, Vertice* b, Vertice* c){
+    int val = (b->y - a->y) * (c->x - b->x) - (b->x - a->x) * (c->y - b->y);
+    return (val > 0);
+}
+
+bool intersection(HalfEdge& prev, HalfEdge& current){
+    // Pular caso as arestas são irmãs (dividem um endpoint)
+    if (prev.origin == current.twin->origin || current.origin == prev.twin->origin) {
+        return false;
+    }
+
+    Vertice* p1 = prev.origin;
+    Vertice* q1 = prev.twin->origin;
+    Vertice* p2 = current.origin;
+    Vertice* q2 = current.twin->origin;
+
+    // if (p1 == p2 || p1 == q2 || q1 == p2 || q1 == q2) {
+    //     return false;
+    // }
+
+    int o1 = orientation(p1, q1, p2);
+    int o2 = orientation(p1, q1, q2);
+    int o3 = orientation(p2, q2, p1);
+    int o4 = orientation(p2, q2, q1);
+
+    if (o1 != o2 && o3 != o4) {
+        printf("intersection between (%d, %d)-(%d, %d) and (%d, %d)-(%d, %d)\n", 
+               p1->x, p1->y, q1->x, q1->y, 
+               p2->x, p2->y, q2->x, q2->y);  // Fixed the variable order here
+        return true;
+    }
+
+
+    return false;
+};
+
+void SweepLine::addEvent(Event* e){
+    auto first = status.insert(e->halfEdge).first;
+
+    // caso não seja o primeiro nodo, é necessário verificar intersecção 
+    if (first != status.begin()){
+        auto prev = --first;
+        if (intersection(**prev, *e->halfEdge)){
+            eventQueue.push(createNewEvent(e->halfEdge->origin, INTERSECTION, e->halfEdge));
+        }
+
+        auto next = ++first;
+        if (next != status.end()){
+            if (intersection(**next, *e->halfEdge)){
+                eventQueue.push(createNewEvent(e->halfEdge->origin, INTERSECTION, e->halfEdge));
+            }
+        }
+    }
+}
+
+void SweepLine::removeEvent(Event* e){
+    auto node = status.find(e->halfEdge);
+
+    if (node != status.end()){
+        if (node != status.begin()){
+            auto prev = --node;
+            auto next = ++node;
+            if (next != status.end()){
+                if (intersection(**prev, **next)){
+                    eventQueue.push(createNewEvent(e->halfEdge->origin, INTERSECTION, e->halfEdge));
+                }
+            }
+        }
+
+        status.erase(node);
+    }
+
+    return;
+}
+
+bool SweepLine::findIntersection(HALF_EDGES halfEdges){
+    for (HalfEdge* h : halfEdges){
+        insertHalfEdgesHeap(h);    
+    // print_priority_queue(eventQueue);
+    }
+
+    while (!eventQueue.empty()){
+        Event* e = eventQueue.top();
+        eventQueue.pop();
+
+        switch (e->type){
+            case LEFT_ENDPOINT:
+                addEvent(e);
+                break;
+            case RIGHT_ENDPOINT:
+                removeEvent(e);
+                break;
+            case INTERSECTION:
+                return true;
+            default:
+                break;
+        }
+    }
+
+    return false;
+}
+
+bool SweepLine::findIntersection(HalfEdge* h1, HalfEdge* h2){
+    return false;
+}

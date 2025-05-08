@@ -309,10 +309,8 @@ bool Mesh::isSubdivPlanar(){
 bool Mesh::isOverlapped(){
     SweepLine* sl = new SweepLine();
 
-    for (Face* f : faces){
-        if (sl->findIntersection(f->halfEdge))
-            return true;
-    }
+    if (sl->findIntersection(halfEdges))
+        return true;
 
     return false;
 }
@@ -331,7 +329,7 @@ bool Mesh::isTopologyValid(){
         printf("não subdivisão planar\n");
         return false;
     };
-    // if (isOverlapped()) return false;
+    if (isOverlapped()) return false;
 
     return true;
 }
