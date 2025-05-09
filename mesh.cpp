@@ -57,7 +57,7 @@ void Mesh::load(){
         while (scanf("%d", &vertexIndex) == 1) {
             faceVertices.push_back(vertexIndex);
             if (getchar() == '\n') break; 
-        }
+            }
 
         this->faceVertices.push_back(faceVertices);
     }
@@ -103,8 +103,6 @@ void Mesh::constructEdges(){
 
 	for (unsigned int i = 0; i < nFaces; i++){
 		size = faceVertices[i].size();
-        printf("face %d, size: %d\n", i, size);
-        // createNewFace(i);
 
 		for(unsigned int j = 0; j < size; j++){
 			idxOrig = faceVertices[i][j] - 1;
@@ -112,6 +110,7 @@ void Mesh::constructEdges(){
             edge = new Edge;
             edge->dest = idxDest;
             edge->faceIdx = i;
+            printf("edge %d, (%d, %d), (%d, %d)\n", i, vertices[idxOrig]->x, vertices[idxOrig]->y, vertices[idxDest]->x, vertices[idxDest]->y);
 
 			edgesMap[idxOrig].push_back(edge);
 		}			
@@ -148,19 +147,21 @@ void Mesh::constructHalfEdges(){
 
         if (origin > dest) continue;
 
-        printf("faceIdx: %d, origin: %d, dest: %d\n", edge->faceIdx, origin, dest);
         HalfEdge* he = createHalfEdgeNode(vertices[origin], edge->faceIdx, idx++);
         HalfEdge* twin = nullptr;
 
         // Como um vértice pode ter mais de uma semi-aresta, é necessário verificar todos os candidatos 
         if (edgesToProcess.count(dest)) {
+            printf("hf: (%d, %d), (%d, %d)\n", he->origin->x, he->origin->y, vertices[dest]->x, vertices[dest]->y);
             for (Edge* candidate : edgesToProcess[dest]) {
+                printf("candidate: (%d, %d), (%d, %d)\n", vertices[dest]->x, vertices[dest]->y, vertices[candidate->dest]->x, vertices[candidate->dest]->y);
                 if (candidate->dest == origin) {
                     twin = createHalfEdgeNode(vertices[dest], candidate->faceIdx, idx++);
                     break;
                 }
             }
         }
+        printf("HalfEdges size: %ld, edgesSize: %ld\n", halfEdges.size(), edgesMap.size());
 
         if (!twin){
             // Se não encontrar a semi-aresta simétrica, significa que a malha não é válida
@@ -180,6 +181,7 @@ void Mesh::constructHalfEdges(){
     for (HalfEdge *he : halfEdges){
         findNext(he);
     }
+
 
     for (HalfEdge *he : halfEdges){
         findPrev(he);
@@ -232,8 +234,8 @@ bool Mesh::isOpen(){
     for (unsigned int i = 0; i < nFaces; i++){
         f = faces[i];
         if (!f)
-            return true;
-
+        return true;
+    
         temp = f->halfEdge;
 
         if (f->halfEdge == NULL || f->halfEdge->next == NULL)
@@ -293,19 +295,8 @@ bool Mesh::isSubdivPlanar(){
 }
 
 /*
-    Identifica se há auto-intersecção com o algoritmo ray-casting
+    Identifica se há auto-intersecção com o algoritmo sweep line
 */
-// bool Mesh::autoIntersect(Face* f){
-//     HalfEdge* temp = f->halfEdge;
-
-//     while (temp->next != f->halfEdge){
-//         // ray casting ou sweep line
-//         continue;
-//     }
-
-//     return false;
-// }
-
 bool Mesh::isOverlapped(){
     SweepLine* sl = new SweepLine();
 

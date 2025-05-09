@@ -36,7 +36,13 @@ void SweepLine::insertHalfEdgesHeap(HalfEdge* h) {
 
 int orientation(Vertice* a, Vertice* b, Vertice* c){
     int val = (b->y - a->y) * (c->x - b->x) - (b->x - a->x) * (c->y - b->y);
-    return (val > 0);
+    if (val == 0) return 0; // Casos colineares
+    return (val > 0) ? 1 : 2;
+}
+
+bool onSegment(Vertice* p, Vertice* q, Vertice* r){
+    return (q->x <= std::max(p->x, r->x) && q->x >= std::min(p->x, r->x) &&
+            q->y <= std::max(p->y, r->y) && q->y >= std::min(p->y, r->y));
 }
 
 bool intersection(HalfEdge& prev, HalfEdge& current){
@@ -45,14 +51,14 @@ bool intersection(HalfEdge& prev, HalfEdge& current){
         return false;
     }
 
+    printf("checking intersection between (%d, %d)-(%d, %d) and (%d, %d)-(%d, %d)\n", 
+           prev.origin->x, prev.origin->y, prev.twin->origin->x, prev.twin->origin->y, 
+           current.origin->x, current.origin->y, current.twin->origin->x, current.twin->origin->y);
+
     Vertice* p1 = prev.origin;
     Vertice* q1 = prev.twin->origin;
     Vertice* p2 = current.origin;
     Vertice* q2 = current.twin->origin;
-
-    // if (p1 == p2 || p1 == q2 || q1 == p2 || q1 == q2) {
-    //     return false;
-    // }
 
     int o1 = orientation(p1, q1, p2);
     int o2 = orientation(p1, q1, q2);
@@ -62,25 +68,29 @@ bool intersection(HalfEdge& prev, HalfEdge& current){
     if (o1 != o2 && o3 != o4) {
         printf("intersection between (%d, %d)-(%d, %d) and (%d, %d)-(%d, %d)\n", 
                p1->x, p1->y, q1->x, q1->y, 
-               p2->x, p2->y, q2->x, q2->y);  // Fixed the variable order here
+               p2->x, p2->y, q2->x, q2->y);  
         return true;
     }
 
+    if (o1 == 0 && onSegment(p1, p2, q1)) return true;
+    if (o2 == 0 && onSegment(p1, q2, q1)) return true;
+    if (o3 == 0 && onSegment(p2, p1, q2)) return true;
+    if (o4 == 0 && onSegment(p2, q1, q2)) return true;
 
     return false;
 };
 
 void SweepLine::addEvent(Event* e){
     auto first = status.insert(e->halfEdge).first;
+    auto prev = --first;
+    auto next = ++first;
 
     // caso não seja o primeiro nodo, é necessário verificar intersecção 
     if (first != status.begin()){
-        auto prev = --first;
         if (intersection(**prev, *e->halfEdge)){
             eventQueue.push(createNewEvent(e->halfEdge->origin, INTERSECTION, e->halfEdge));
         }
 
-        auto next = ++first;
         if (next != status.end()){
             if (intersection(**next, *e->halfEdge)){
                 eventQueue.push(createNewEvent(e->halfEdge->origin, INTERSECTION, e->halfEdge));
@@ -91,11 +101,11 @@ void SweepLine::addEvent(Event* e){
 
 void SweepLine::removeEvent(Event* e){
     auto node = status.find(e->halfEdge);
+    auto next = ++node;
+    auto prev = --node;
 
     if (node != status.end()){
         if (node != status.begin()){
-            auto prev = --node;
-            auto next = ++node;
             if (next != status.end()){
                 if (intersection(**prev, **next)){
                     eventQueue.push(createNewEvent(e->halfEdge->origin, INTERSECTION, e->halfEdge));
