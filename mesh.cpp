@@ -365,6 +365,6 @@ void Mesh::printDCEL(){
     }
 
     for (unsigned int i = 0; i < nHalfEdges; i++){
-        printf("%d %d %d %d\n", halfEdges[i]->origin->idx+1, halfEdges[i]->twin->origin->idx+1, halfEdges[i]->leftFace->idx+1, halfEdges[i]->next->origin->idx+1);
+        printf("%d %d %d %d %d\n", halfEdges[i]->origin->idx+1, halfEdges[i]->twin->idx+1, halfEdges[i]->leftFace->idx+1, halfEdges[i]->next->idx+1, halfEdges[i]->prev->idx+1);
     }
 }
