@@ -1,14 +1,16 @@
 Eduarda Saibert
-Thales Gabriel Carvalho de Lima 
-**Relatório de Geometria Computacional: DCEL**
 
-# 1 Problema
+Thales Gabriel Carvalho de Lima 
+
+# **Relatório de Geometria Computacional: DCEL**
+
+## 1 Problema
 
 O trabalho consiste em fazer uma implementação da leitura de uma lista de regiões que compõe
 uma subdivisão planar (malha), testar se é topologicamente bem definida e gerar uma DCEL
 (Doubly Connected Edge List) como saída.
 
-# 2 Entrada
+## 2 Entrada
 
 Para entrada de arquivos, considerou-se a seguinte definição: A malha será descrita por um
 texto. A primeira linha tem dois números inteiros, _n_ e _f_ , separados por um espaço. O primeiro é
@@ -21,7 +23,7 @@ espaços, uma face por linha.
 Além disso o programa considera que a face externa sempre está no sentido contrário à das
 faces internas.
 
-# 3 Programa
+## 3 Programa
 
 ```
 Para o programa, utiliza-se:
@@ -31,7 +33,7 @@ make {all} -- compilação
 ./malha < in.txt > out.txt -- iniciar programa
 make clean -- apagar objetos
 ```
-# 4 A Classe Mesh
+## 4 A Classe Mesh
 
 ```
 Para a construção da classe Mesh, são necessárias as seguintes definições:
@@ -50,7 +52,7 @@ Para a construção da classe Mesh, são necessárias as seguintes definições:
 Na leitura do arquivo de entrada são gerados todos os vértices e todas as faces. Os ponteiros
 encontrados dentro dessas estruturas são preenchidos ao longo das funções seguintes.
 ```
-# 5 Construindo Arestas
+## 5 Construindo Arestas
 
 Além das definições acima também é necessário a definição das arestas para a construção das
 semi-arestas. Cada aresta irá guardar um ponteiro para o índice de destino da aresta e um índice
@@ -65,7 +67,7 @@ ter um vértice de origem, foi proposto que cada indexação resulte em um vetor
 entrada de malha padrão esse vetor nunca chegará a n (número de vértices), ou seja, o HashMap
 ainda preserva seu custo de busca.
 
-# 6 Construindo Semi-arestas
+## 6 Construindo Semi-arestas
 
 A partir de um loop no HashMap de arestas, é possível definir as semi-arestas. A cada itera-
 ção, serão criadas duas semi-arestas, sendo uma oposta da outra. Para definir a aresta oposta, é
@@ -80,26 +82,26 @@ Caso contrário, serão chamadas duas outras funções:
     _f ace_ ( _u_ ) = _f ace_ ( _w_ )e _origem_ ( _w_ ) = _origem_ ( _v_ )
 - **Achar Anterior** : No mesmo princípio, _ant_ ( _v_ ) = _w_ se _f ace_ ( _u_ ) = _f ace_ ( _w_ )e _prox_ ( _w_ ) = _u_
 
-# 7 Checagem de Topologia
+## 7 Checagem de Topologia
 
 Na checagem de topologia, é necessário tratar três casos degenerados: os casos em que a estru-
 tura gerada é aberta, não é subdivisão planar ou contém intersecção.
 
-## 7.1 Checagem de Abertura
+### 7.1 Checagem de Abertura
 
 Para saber se uma malha é aberta, basta iterar sobre as semi-arestas procurando uma aresta
 que é fronteira de somente uma face. Para isso, basta que sua oposta não exista ou não esteja
 contida em uma face.
 
 
-## 7.2 Checagem da Subdivisão Planar
+### 7.2 Checagem da Subdivisão Planar
 
 Para saber se uma malha é subdivisão planar é necessário que ela tenha fronteira com somente
 duas faces. Assim, é preciso checar se alguma aresta faz divisa com mais de duas faces. Para isso,
 itera-se sobre a lista circular de cada face, inserindo cada face única em um array. Caso o número
 de faces coletadas seja mais do que dois, a malha não é uma subdivisão planar.
 
-## 7.3 Checagem de Intersecções (Sweep Line)
+### 7.3 Checagem de Intersecções (Sweep Line)
 
 Para a checagem de intersecções (sejam elas ocorrendo em uma única face ou entre duas ou
 mais faces), optou-se por utilizar o algoritmo de varredura. Nesse algoritmo, uma reta infinita _y_
@@ -126,7 +128,7 @@ quando não há intersecção (será iterado sobre todos os eventos).
 ```
 set<HalfEdge*, SetComparator> status;
 ```
-# 8 Saída
+## 8 Saída
 
 Na primeira linha tem três números, _n_ , _m_ e _f_ , que são os números de vértices, arestas e faces,
 respectivamente. Os vértices, as faces e as semi-arestas são indexados iniciando em 1, de acordo
