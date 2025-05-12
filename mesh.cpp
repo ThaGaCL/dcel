@@ -51,6 +51,8 @@ void Mesh::load(){
     for (unsigned int i = 0; i < nFaces; i++) {
         f = new Face;
         f->halfEdge = nullptr;
+        f->idx = i;
+    
         faces.push_back(f);
 
         faceVertices.clear();
@@ -95,6 +97,11 @@ void Mesh::printHalfEdge(HalfEdge* he){
     std::cout << "Twin: " << he->twin->origin->x << " " << he->twin->origin->y << std::endl;
 }
 
+/*
+    Função que constrói as arestas a partir dos vértices
+    Cada aresta é representada por um par de vértices
+    Como mais de uma aresta pode ser criada, é necessário armazenar as arestas em um HashMap
+*/
 void Mesh::constructEdges(){
 	Edge* edge;
 	int idxOrig;
@@ -110,21 +117,26 @@ void Mesh::constructEdges(){
             edge = new Edge;
             edge->dest = idxDest;
             edge->faceIdx = i;
-            printf("edge %d, (%d, %d), (%d, %d)\n", i, vertices[idxOrig]->x, vertices[idxOrig]->y, vertices[idxDest]->x, vertices[idxDest]->y);
 
 			edgesMap[idxOrig].push_back(edge);
 		}			
 	}
-
 	constructHalfEdges();
 }
 
+/**
+    Função que cria uma nova semi-aresta
+ */
 HalfEdge* Mesh::createHalfEdgeNode(Vertice* origin, int faceIdx, int idx){
     HalfEdge* he = new HalfEdge;
 	he->twin = NULL;
 	he->next = NULL;
 	he->prev = NULL;
     he->origin = origin;
+
+    if (!he->origin->halfEdge)
+        he->origin->halfEdge = he;
+
     he->idx = idx;
 
     he->leftFace = faces[faceIdx];
@@ -133,7 +145,9 @@ HalfEdge* Mesh::createHalfEdgeNode(Vertice* origin, int faceIdx, int idx){
     return he;
 }
 
-
+/*
+    Função que constrói as semi-arestas a partir das arestas
+*/
 void Mesh::constructHalfEdges(){
     int idx = 0;
 
@@ -149,24 +163,21 @@ void Mesh::constructHalfEdges(){
 
         HalfEdge* he = createHalfEdgeNode(vertices[origin], edge->faceIdx, idx++);
         HalfEdge* twin = nullptr;
+        nHalfEdges++;
 
         // Como um vértice pode ter mais de uma semi-aresta, é necessário verificar todos os candidatos 
         if (edgesToProcess.count(dest)) {
-            printf("hf: (%d, %d), (%d, %d)\n", he->origin->x, he->origin->y, vertices[dest]->x, vertices[dest]->y);
             for (Edge* candidate : edgesToProcess[dest]) {
-                printf("candidate: (%d, %d), (%d, %d)\n", vertices[dest]->x, vertices[dest]->y, vertices[candidate->dest]->x, vertices[candidate->dest]->y);
                 if (candidate->dest == origin) {
                     twin = createHalfEdgeNode(vertices[dest], candidate->faceIdx, idx++);
+                    nHalfEdges++;
                     break;
                 }
             }
         }
-        printf("HalfEdges size: %ld, edgesSize: %ld\n", halfEdges.size(), edgesMap.size());
 
         if (!twin){
             // Se não encontrar a semi-aresta simétrica, significa que a malha não é válida
-            // Ela é aberta
-            printf("aberta");
             return;
         }
 
@@ -182,13 +193,11 @@ void Mesh::constructHalfEdges(){
         findNext(he);
     }
 
-
     for (HalfEdge *he : halfEdges){
         findPrev(he);
-        printHalfEdge(he);
+        // printHalfEdge(he);
     }
 }
-
 
 /*
     Para saber o próximo, é necessário checar a origem da simétrica da semi-aresta i
@@ -225,8 +234,10 @@ void Mesh::findPrev(HalfEdge* he){
     he->prev = prev;
 }
 
+/*
+    identificar se é aberta : alguma aresta é fronteira de somente uma face
+*/
 bool Mesh::isOpen(){
-    // identificar se é aberta : alguma aresta é fronteira de somente uma face
     HalfEdge* temp;
     Face* f;
 
@@ -253,8 +264,10 @@ bool Mesh::isOpen(){
     return false;
 }
 
+/*
+    identificar se não é subdivisão planar : alguma aresta é fronteira de mais de duas faces
+*/
 bool Mesh::isSubdivPlanar(){
-    // identificar se não é subdivisão planar : alguma aresta é fronteira de mais de duas faces
     HalfEdge* temp;
     Face* f;
     FACES facesCollected;
@@ -306,6 +319,11 @@ bool Mesh::isOverlapped(){
     return false;
 }
 
+/*
+    Identifica se a malha é válida
+    Se a malha não for válida, retorna false
+    Se a malha for válida, retorna true
+*/
 bool Mesh::isTopologyValid(){
     // identificar se é aberta : alguma aresta é fronteira de somente uma face
     // identificar se não é subdivisão planar : alguma aresta é fronteira de mais de duas faces
@@ -313,14 +331,40 @@ bool Mesh::isTopologyValid(){
     // caso esteja tudo certo, retornar true
 
     if (isOpen()) {
-        printf("aberta 2\n");
+        printf("aberta\n");
         return false;
     };
     if (isSubdivPlanar()) {
         printf("não subdivisão planar\n");
         return false;
     };
-    if (isOverlapped()) return false;
+    if (isOverlapped()) {
+        printf("superposta\n");
+        return false;
+    };
 
     return true;
+}
+
+/*
+    Função que imprime a malha
+    A primeira linha contém o número de vértices, arestas e faces
+    A segunda linha imprime a struct Vertice
+    A terceira linha imprime a struct Face
+    A quarta linha imprime a struct HalfEdge
+*/
+void Mesh::printDCEL(){
+    printf("%d %d %d\n", nVertices, nHalfEdges/2, nFaces);
+
+    for (unsigned int i = 0; i < nVertices; i++){
+        printf("%d %d %d\n", vertices[i]->x, vertices[i]->y, vertices[i]->halfEdge->idx+1);
+    }
+
+    for (unsigned int i = 0; i < nFaces; i++){
+        printf("%d\n", faces[i]->halfEdge->idx+1);
+    }
+
+    for (unsigned int i = 0; i < nHalfEdges; i++){
+        printf("%d %d %d %d\n", halfEdges[i]->origin->idx+1, halfEdges[i]->twin->origin->idx+1, halfEdges[i]->leftFace->idx+1, halfEdges[i]->next->origin->idx+1);
+    }
 }

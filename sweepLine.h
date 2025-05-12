@@ -5,14 +5,11 @@
 #include <queue>
 #include <set>
 
-enum EventType { LEFT_ENDPOINT, RIGHT_ENDPOINT, INTERSECTION };
+enum EventType { LEFT_ENDPOINT, RIGHT_ENDPOINT };
 typedef struct {
     HalfEdge* halfEdge;                     // Ponteiro para a semi-aresta
     Vertice* vertex;                        // Ponteiro para o vértice
     EventType type;
-    bool isStart;                           // Indica se o evento é um ponto de início (true) ou um ponto de fim (false)
-    bool isIntersection;                    // Indica se o evento é uma interseção (true) ou não (false)
-    bool isVertex;                          // Indica se o evento é um vértice (true) ou não (false)
 } Event;
 
 typedef struct {

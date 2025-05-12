@@ -1,10 +1,10 @@
-5 4                # 5 vertices, 4 faces.
-0 0                # 1
-4 4                # 2
-0 4                # 3
-4 0                # 4
-2 2                # 5 (intersection point)
-1 5 3              # Face 1a (triangle).
-5 2 4              # Face 1b (triangle).
-4 2 5              # Face 2a (reversed).
-5 3 1              # Face 2b (reversed).
+5 4                
+0 0                
+4 4                
+0 4               
+4 0               
+2 2               
+1 5 3             
+5 2 4              
+4 2 5             
+5 3 1              

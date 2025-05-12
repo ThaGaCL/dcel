@@ -13,14 +13,15 @@ class Mesh {
             for (auto he : halfEdges) delete he;
         };
         void load();
+        void printDCEL();
         void constructHalfEdges();
         void constructEdges();
         bool isTopologyValid();
 
     private:
-        unsigned int nVertices;
-        unsigned int nFaces;
-        unsigned int nEdges;
+        unsigned int nVertices = 0;
+        unsigned int nFaces = 0;
+        unsigned int nHalfEdges = 0;
 
         bool faceDoesExist(int idx);
         bool checkIfVertexExists(int x, int y);

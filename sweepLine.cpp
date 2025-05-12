@@ -38,9 +38,6 @@ bool onSegment(Vertice* p, Vertice* q, Vertice* r){
 
 bool intersection(HalfEdge& prev, HalfEdge& current){
     // Pular caso as arestas são irmãs (dividem um endpoint)
-    printf("checking intersection between (%d, %d)-(%d, %d) and (%d, %d)-(%d, %d)\n", 
-           prev.origin->x, prev.origin->y, prev.twin->origin->x, prev.twin->origin->y, 
-           current.origin->x, current.origin->y, current.twin->origin->x, current.twin->origin->y);
     // if (prev.origin == current.twin->origin || current.origin == prev.twin->origin) {
     //     return false;
     // }
@@ -61,9 +58,6 @@ bool intersection(HalfEdge& prev, HalfEdge& current){
     int o4 = orientation(p2, q2, q1);
 
     if (o1 != o2 && o3 != o4) {
-        printf("intersection between (%d, %d)-(%d, %d) and (%d, %d)-(%d, %d)\n", 
-               p1->x, p1->y, q1->x, q1->y, 
-               p2->x, p2->y, q2->x, q2->y);  
         return true;
     }
 
@@ -85,7 +79,7 @@ void printStatus(set<HalfEdge*, SetComparator>& status){
 
 bool SweepLine::addEvent(Event* e){
     auto first = status.insert(e->halfEdge).first;
-    printStatus(status);
+    // printStatus(status);
     
     // caso não seja o primeiro nodo, é necessário verificar intersecção 
     if (first != status.begin()){
@@ -145,8 +139,8 @@ bool SweepLine::findIntersection(HALF_EDGES halfEdges){
             case RIGHT_ENDPOINT:
                 if (removeEvent(e)) return true;
                 break;
-            case INTERSECTION:
-                return true;
+            // case INTERSECTION:
+            //     return true;
             default:
                 break;
         }
