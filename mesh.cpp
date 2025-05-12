@@ -153,41 +153,42 @@ void Mesh::constructHalfEdges(){
 
     std::unordered_map<int, vector<Edge*>> edgesToProcess = edgesMap;
     for (auto edgeVector = edgesToProcess.begin(); edgeVector != edgesToProcess.end(); ++edgeVector) {
-    int origin = edgeVector->first;
-    auto& edgeList = edgeVector->second;
+        int origin = edgeVector->first;
+        auto& edgeList = edgeVector->second;
 
-    for (Edge* edge : edgeList) {
-        int dest = edge->dest;
+        for (Edge* edge : edgeList) {
+            int dest = edge->dest;
 
-        if (origin > dest) continue;
+            if (origin > dest) continue;
 
-        HalfEdge* he = createHalfEdgeNode(vertices[origin], edge->faceIdx, idx++);
-        HalfEdge* twin = nullptr;
-        nHalfEdges++;
+            HalfEdge* he = createHalfEdgeNode(vertices[origin], edge->faceIdx, idx++);
+            HalfEdge* twin = nullptr;
+            nHalfEdges++;
 
-        // Como um vértice pode ter mais de uma semi-aresta, é necessário verificar todos os candidatos 
-        if (edgesToProcess.count(dest)) {
-            for (Edge* candidate : edgesToProcess[dest]) {
-                if (candidate->dest == origin) {
-                    twin = createHalfEdgeNode(vertices[dest], candidate->faceIdx, idx++);
-                    nHalfEdges++;
-                    break;
+            // Como um vértice pode ter mais de uma semi-aresta, é necessário verificar todos os candidatos 
+            if (edgesToProcess.count(dest)) {
+                auto& candidateList = edgesToProcess[dest];
+                for (auto it = candidateList.begin(); it != candidateList.end(); ++it) {
+                    if ((*it)->dest == origin) {
+                        twin = createHalfEdgeNode(vertices[dest], (*it)->faceIdx, idx++);
+                        nHalfEdges++;
+                        candidateList.erase(it); // Remove o twin do edgesToProcess
+                        break;
+                    }
                 }
             }
+
+            if (!twin){
+                // Se não encontrar a semi-aresta simétrica, significa que a malha não é válida
+                return;
+            }
+
+            he->twin = twin;
+            twin->twin = he;
+
+            halfEdges.push_back(he);
+            halfEdges.push_back(twin);
         }
-
-        if (!twin){
-            // Se não encontrar a semi-aresta simétrica, significa que a malha não é válida
-            return;
-        }
-
-        he->twin = twin;
-        twin->twin = he;
-
-        halfEdges.push_back(he);
-        halfEdges.push_back(twin);
-
-    }
     }
     for (HalfEdge *he : halfEdges){
         findNext(he);
