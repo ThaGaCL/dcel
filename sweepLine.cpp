@@ -36,17 +36,28 @@ bool onSegment(Vertice* p, Vertice* q, Vertice* r){
             q->y <= std::max(p->y, r->y) && q->y >= std::min(p->y, r->y));
 }
 
+bool isInsideAnotherFace(HalfEdge* prev, HalfEdge* current){
+    // Verifica se a aresta atual está dentro de outra face
+
+    // implementar lógica para verificar se algum ponto de outra face está totalmente inscrito
+    
+    return false;
+}
+
 bool intersection(HalfEdge& prev, HalfEdge& current){
     // Pular caso as arestas são irmãs (dividem um endpoint)
     // if (prev.origin == current.twin->origin || current.origin == prev.twin->origin) {
     //     return false;
     // }
 
-
     Vertice* p1 = prev.origin;
     Vertice* q1 = prev.twin->origin;
     Vertice* p2 = current.origin;
     Vertice* q2 = current.twin->origin;
+
+    if (isInsideAnotherFace(&prev, &current)) {
+        return false;
+    }
 
     if (p1 == p2 || p1 == q2 || q1 == p2 || q1 == q2) {
         return false;
@@ -79,7 +90,7 @@ void printStatus(set<HalfEdge*, SetComparator>& status){
 
 bool SweepLine::addEvent(Event* e){
     auto first = status.insert(e->halfEdge).first;
-    // printStatus(status);
+    printStatus(status);
     
     // caso não seja o primeiro nodo, é necessário verificar intersecção 
     if (first != status.begin()){
