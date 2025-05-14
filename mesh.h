@@ -1,7 +1,17 @@
 #ifndef mesh_h
 #define mesh_h
 
-// #include "io.h" // Definições de Structs e tipos
+/*
+    mesh.h
+
+    Este arquivo contém a implementação da classe Mesh, que representa uma malha poligonal
+    e fornece métodos para carregar a malha, imprimir a representação DCEL (Doubly Connected
+    Edge List), construir semi-arestas e arestas, e verificar a validade da topologia da malha.
+    A classe também contém métodos auxiliares para criar novos vértices, faces e semi-arestas,
+    além de verificar se um vértice já existe na malha.
+
+*/
+
 #include "sweepLine.h"
 
 class Mesh {

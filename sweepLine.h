@@ -1,6 +1,17 @@
 #ifndef SWEEP_H
 #define SWEEP_H
 
+/*
+    sweepLine.h
+    
+    Este arquivo contém a implementação do algoritmo de varredura (sweep line) para detectar interseções em uma malha.
+    O algoritmo utiliza uma árvore de busca balanceada para armazenar as semi-arestas ativas e uma fila de eventos
+    para processar os eventos de interseção. A classe SweepLine é responsável por gerenciar esses dados e executar
+    o algoritmo de varredura. A classe Event representa um evento na fila de eventos, enquanto a classe SetComparator
+    é usada para comparar as semi-arestas ativas na árvore de busca. 
+
+*/
+
 #include "io.h"
 #include <queue>
 #include <set>
