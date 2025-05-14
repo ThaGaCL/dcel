@@ -1,5 +1,9 @@
 #include "sweepLine.h"
 
+/*
+    Função que cria um novo evento
+    Retorna o evento criado
+*/
 Event* createNewEvent(Vertice* v, EventType t, HalfEdge* h){
     Event* e = new Event();
     e->vertex = v;
@@ -9,6 +13,10 @@ Event* createNewEvent(Vertice* v, EventType t, HalfEdge* h){
     return e;
 }
 
+/*
+    Função que insere os eventos na fila de eventos
+    A fila de eventos é uma min-heap, onde o menor elemento é o primeiro a ser removido
+*/
 void SweepLine::insertHalfEdgesHeap(HalfEdge* h) {
     if (!h) return;
 
@@ -25,10 +33,14 @@ void SweepLine::insertHalfEdgesHeap(HalfEdge* h) {
 
 }
 
+/*
+    Função que verifica a orientação dos pontos
+    Retorna 0 se colinear, 1 se horário e 2 se anti-horário
+*/
 int orientation(Vertice* a, Vertice* b, Vertice* c){
     int val = (b->y - a->y) * (c->x - b->x) - (b->x - a->x) * (c->y - b->y);
     if (val == 0) return 0; // Casos colineares
-    return (val > 0) ? 1 : 2;
+    return (val > 0) ? 1 : 2; // Horário ou anti-horário
 }
 
 bool onSegment(Vertice* p, Vertice* q, Vertice* r){
@@ -36,12 +48,32 @@ bool onSegment(Vertice* p, Vertice* q, Vertice* r){
             q->y <= std::max(p->y, r->y) && q->y >= std::min(p->y, r->y));
 }
 
+// Verifica se a aresta atual está dentro de outra face
 bool isInsideAnotherFace(HalfEdge* prev, HalfEdge* current){
-    // Verifica se a aresta atual está dentro de outra face
+    Face* currentFace = current->leftFace;
+    Face* prevFace = prev->leftFace;
 
-    // implementar lógica para verificar se algum ponto de outra face está totalmente inscrito
-    
-    return false;
+    if (currentFace == prevFace) return false;
+
+    // Verifica se todos os pontos da aresta atual estão dentro da face anterior
+    HalfEdge* temp = prevFace->halfEdge;
+    do {
+        if (orientation(temp->origin, temp->next->origin, current->origin) != 2) {
+            return false; 
+        }
+        temp = temp->next;
+    } while (temp != prevFace->halfEdge);
+
+    // Verifica o segundo ponto da aresta atual
+    temp = prevFace->halfEdge;
+    do {
+        if (orientation(temp->origin, temp->next->origin, current->twin->origin) != 2) {
+            return false; 
+        }
+        temp = temp->next;
+    } while (temp != prevFace->halfEdge);
+
+    return true; 
 }
 
 bool intersection(HalfEdge& prev, HalfEdge& current){
@@ -55,8 +87,10 @@ bool intersection(HalfEdge& prev, HalfEdge& current){
     Vertice* p2 = current.origin;
     Vertice* q2 = current.twin->origin;
 
+    // Verifica se a aresta atual está dentro de outra face
+    // Se a aresta atual está dentro de outra face, há superposição
     if (isInsideAnotherFace(&prev, &current)) {
-        return false;
+        return true;
     }
 
     if (p1 == p2 || p1 == q2 || q1 == p2 || q1 == q2) {
@@ -88,9 +122,13 @@ void printStatus(set<HalfEdge*, SetComparator>& status){
     printf("\n");
 }
 
+/*
+    Função que adiciona um evento na lista de eventos
+    Retorna true se houver interseção
+*/
 bool SweepLine::addEvent(Event* e){
     auto first = status.insert(e->halfEdge).first;
-    printStatus(status);
+    // printStatus(status);
     
     // caso não seja o primeiro nodo, é necessário verificar intersecção 
     if (first != status.begin()){
@@ -109,6 +147,10 @@ bool SweepLine::addEvent(Event* e){
     return false;
 }
 
+/*
+    Função que remove um evento da lista de eventos
+    Retorna true se houver interseção
+*/
 bool SweepLine::removeEvent(Event* e){
     auto node = status.find(e->halfEdge);
     if (node == status.end()) return false;
@@ -131,6 +173,10 @@ bool SweepLine::removeEvent(Event* e){
 }
 
 
+/*
+    Função que verifica se inicia o sweep line 
+    Retorna true se houver interseção
+*/
 bool SweepLine::findIntersection(HALF_EDGES halfEdges){
     for (HalfEdge* h : halfEdges){
         insertHalfEdgesHeap(h);    
