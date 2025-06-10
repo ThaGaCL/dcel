@@ -1,17 +1,15 @@
 CXX = g++
-
 CXXFLAGS = -Wall -g
 
-TARGET = malha 
+TARGET = libmesh.a
 
 SOURCES = $(wildcard *.cpp)
-
 OBJECTS = $(SOURCES:.cpp=.o)
 
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	ar rcs $@ $^
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $<

@@ -58,6 +58,8 @@ typedef struct {
     }
 } SetComparator;
 
+int orientation(Vertice *a, Vertice *b, Vertice *c);
+bool onSegment(Vertice* p, Vertice* q, Vertice* r);
 
 class SweepLine {
 public:
@@ -67,6 +69,7 @@ public:
     SetComparator comparator;
 
     bool findIntersection(HALF_EDGES halfEdges);
+
 
 private:
     set<HalfEdge*, SetComparator> status;                               // Árvore de busca balanceada

@@ -22,12 +22,14 @@ class Mesh {
             for (auto f : faces) delete f;
             for (auto he : halfEdges) delete he;
         };
-        void load();
+        void loadTetrahedron(Vertice* v1, Vertice* v2, Vertice* v3, Vertice* v4);
         void printDCEL();
-        void constructHalfEdges();
-        void constructEdges();
         bool isTopologyValid();
-
+        void insertNewHalfEdgeBetweenEdges(Face* f, HalfEdge* newHe, HalfEdge* prevHe);
+        void constructNewColinearHalfEdge(Face* f, Vertice* v, HalfEdge* he);
+        int isPointLeft(Face* f, Vertice* v);
+        Vertice* createNewVertex(int x, int y, int z);
+        
     private:
         unsigned int nVertices = 0;
         unsigned int nFaces = 0;
@@ -38,6 +40,10 @@ class Mesh {
 
         void addVertexToMesh(int x, int y, int z);
 
+        void defineFace(Vertice *v1, Vertice *v2, Vertice *v3, int idx);
+        void constructExternalFace(Vertice* v1, Vertice* v2, Vertice* v3, Vertice* v4);
+        void findTwin(HalfEdge* he);
+
         bool isOpen();
         bool isSubdivPlanar();
         bool isOverlapped();
@@ -45,7 +51,6 @@ class Mesh {
 
         Face* createNewFace(int idx);
         HalfEdge* createHalfEdgeNode(Vertice* origin, int faceIdx, int idx);
-        Vertice* createNewVertex(int x, int y, int z, int idx);
 
         void findNext(HalfEdge* he);
         void findPrev(HalfEdge* he);

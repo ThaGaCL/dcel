@@ -9,8 +9,7 @@ bool Mesh::checkIfVertexExists(int x, int y, int z){
     return false;
 }
 
-
-Vertice* Mesh::createNewVertex(int x, int y, int idx){
+Vertice* Mesh::createNewVertex(int x, int y, int z){
     Vertice* v = nullptr;
 
     if (checkIfVertexExists(x, y, z))
@@ -21,13 +20,77 @@ Vertice* Mesh::createNewVertex(int x, int y, int idx){
     v->y = y;
     v->z = z;
     v->halfEdge = nullptr;
-    v->idx = idx;
+    v->idx = nVertices++; 
     vertices.push_back(v);
 
     return v;
 }
 
+void Mesh::defineFace(Vertice* v1, Vertice* v2, Vertice* v3, int idx){
+    Face* f = createNewFace(idx);
+    if (!f) return;
+
+    HalfEdge* he1 = createHalfEdgeNode(v1, f->idx, nHalfEdges++);
+    HalfEdge* he2 = createHalfEdgeNode(v2, f->idx, nHalfEdges++);
+    HalfEdge* he3 = createHalfEdgeNode(v3, f->idx, nHalfEdges++);
+
+    he1->next = he2; he1->prev = he3;
+    he2->next = he3; he2->prev = he1;
+    he3->next = he1; he3->prev = he2;
+}
+
+// // Cria a face externa do tetraedro conectando v1, v2, v3, v4
+// void Mesh::constructExternalFace(Vertice* v1, Vertice* v2, Vertice* v3, Vertice* v4){
+//     Face* f = createNewFace(nFaces++);
+//     if (!f) return;
+
+//     // Cria as 6 semi-arestas da face externa (v1-v2, v2-v3, v3-v1, v1-v4, v2-v4, v3-v4)
+//     HalfEdge* he1 = createHalfEdgeNode(v3, f->idx, nHalfEdges++);
+//     HalfEdge* he2 = createHalfEdgeNode(v2, f->idx, nHalfEdges++);
+//     HalfEdge* he3 = createHalfEdgeNode(v1, f->idx, nHalfEdges++);
+//     HalfEdge* he4 = createHalfEdgeNode(v4, f->idx, nHalfEdges++);
+//     HalfEdge* he5 = createHalfEdgeNode(v4, f->idx, nHalfEdges++);
+//     HalfEdge* he6 = createHalfEdgeNode(v4, f->idx, nHalfEdges++);
+
+//     // ligação na ordem anti-horária
+//     he1->next = he5; he1->prev = he4;
+//     he2->next = he6; he2->prev = he5;
+//     he3->next = he4; he3->prev = he6;    
+//     he4->next = he1; he4->prev = he3;
+//     he5->next = he2; he5->prev = he1;
+//     he6->next = he3; he6->prev = he2;
+// }
+
+void Mesh::findTwin(HalfEdge* he){
+    HalfEdge* twin = NULL;
+
+    for (HalfEdge* h : halfEdges){
+        // Verifica se a semi-aresta é a simétrica
+        if (h->origin == he->next->origin && h->leftFace != he->leftFace){
+            twin = h;
+            twin->twin = he;
+            he->twin = twin;
+            printHalfEdge(he);
+            break;
+        }
+    }
+}
+
 // to-do : load()
+// os primeiros três vértices formam um plano, enquanto o quarto vértice é o topo do tetraedro
+void Mesh::loadTetrahedron(Vertice* v1, Vertice* v2, Vertice* v3, Vertice* v4){
+    if (!v1 || !v2 || !v3 || !v4) return;
+
+    // Define as faces do tetraedro
+    defineFace(v1, v2, v3, nFaces++);
+    defineFace(v1, v2, v4, nFaces++);
+    defineFace(v1, v3, v4, nFaces++);
+    defineFace(v2, v3, v4, nFaces++);
+
+    for (HalfEdge* he : halfEdges){
+        findTwin(he);
+    }
+}
 
 bool Mesh::faceDoesExist(int idx){
     if (faces.size() == 0){
@@ -47,15 +110,36 @@ Face* Mesh::createNewFace(int idx){
 
     return face;
 }
-
 void Mesh::printHalfEdge(HalfEdge* he){
+    if (!he) {
+        std::cout << "HalfEdge: NULL" << std::endl;
+        return;
+    }
     std::cout << "HalfEdge: " << he << std::endl;
-    std::cout << "Origin: " << he->origin->x << " " << he->origin->y << " " << he->origin->z << std::endl;
-    std::cout << "Left Face: " << he->leftFace << std::endl;
-    std::cout << "Next: " << he->next->origin->x << " " << he->next->origin->y << " " << he->next->origin->z << std::endl;
-    if (he->prev) std::cout << "Prev: " << he->prev->origin->x << " " << he->prev->origin->y << " " << he->prev->origin->z << std::endl;
-    else std::cout << "Prev: NULL" << std::endl;
-    std::cout << "Twin: " << he->twin->origin->x << " " << he->twin->origin->y << " " << he->twin->origin->z << std::endl;
+    if (he->origin)
+        std::cout << "Origin: " << he->origin->x << " " << he->origin->y << " " << he->origin->z << std::endl;
+    else
+        std::cout << "Origin: NULL" << std::endl;
+
+    if (he->leftFace)
+        std::cout << "Left Face: " << he->leftFace << std::endl;
+    else
+        std::cout << "Left Face: NULL" << std::endl;
+
+    if (he->next && he->next->origin)
+        std::cout << "Next: " << he->next->origin->x << " " << he->next->origin->y << " " << he->next->origin->z << std::endl;
+    else
+        std::cout << "Next: NULL" << std::endl;
+
+    if (he->prev && he->prev->origin)
+        std::cout << "Prev: " << he->prev->origin->x << " " << he->prev->origin->y << " " << he->prev->origin->z << std::endl;
+    else
+        std::cout << "Prev: NULL" << std::endl;
+
+    if (he->twin && he->twin->origin)
+        std::cout << "Twin: " << he->twin->origin->x << " " << he->twin->origin->y << " " << he->twin->origin->z << std::endl;
+    else
+        std::cout << "Twin: NULL" << std::endl;
 }
 
 /**
@@ -76,6 +160,7 @@ HalfEdge* Mesh::createHalfEdgeNode(Vertice* origin, int faceIdx, int idx){
     he->leftFace = faces[faceIdx];
     faces[faceIdx]->halfEdge = he;
 
+    halfEdges.push_back(he);
     return he;
 }
 
@@ -143,7 +228,7 @@ int Mesh::isPointLeft(Face* f, Vertice* v){
             count++;
 
         temp = temp->next;
-    } while (temp != he);
+    } while (temp != f->halfEdge);
 
     if (count % 2 == 1) {
         return true; // O ponto está dentro da face
