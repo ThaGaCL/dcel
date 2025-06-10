@@ -1,8 +1,8 @@
 #include "mesh.h"
 
-bool Mesh::checkIfVertexExists(int x, int y){
+bool Mesh::checkIfVertexExists(int x, int y, int z){
     for (Vertice* v : vertices){
-        if (v->x == x && v->y == y){
+        if (v->x == x && v->y == y && v->z == z){
             return true;
         }
     }
@@ -13,12 +13,13 @@ bool Mesh::checkIfVertexExists(int x, int y){
 Vertice* Mesh::createNewVertex(int x, int y, int idx){
     Vertice* v = nullptr;
 
-    if (checkIfVertexExists(x, y))
+    if (checkIfVertexExists(x, y, z))
         return nullptr;
 
     v = new Vertice;
     v->x = x;
     v->y = y;
+    v->z = z;
     v->halfEdge = nullptr;
     v->idx = idx;
     vertices.push_back(v);
@@ -26,47 +27,7 @@ Vertice* Mesh::createNewVertex(int x, int y, int idx){
     return v;
 }
 
-void Mesh::load(){
-    // A primeira linha tem dois n´umeros inteiros, n e f, separados por um espaço. 
-    // O primeiro é o número de vértices, n, e o segundo é o numero de faces, f , da malha.
-    // As n linhas seguintes contém as coordenadas de cada vértice, sendo dois números inteiros separados por
-    // espaços, xi e yi, onde i é o índice do vértice, variando de 1 a n, na ordem em que aparecem. A partir
-    // daí, as próximas f linhas contém os índices dos vértices de cada face, separados por espaçcos, uma face por
-    // linha.
-
-    Face* f;
-    vector<int> faceVertices;
-    int vertexIndex;
-
-    scanf("%u %u", &nVertices, &nFaces);
-
-    for (unsigned int i = 0; i < nVertices; i++) {
-        int x, y;
-        scanf("%d %d", &x, &y);
-
-        createNewVertex(x, y, i);
-    }
-
-
-    for (unsigned int i = 0; i < nFaces; i++) {
-        f = new Face;
-        f->halfEdge = nullptr;
-        f->idx = i;
-    
-        faces.push_back(f);
-
-        faceVertices.clear();
-        while (scanf("%d", &vertexIndex) == 1) {
-            faceVertices.push_back(vertexIndex);
-            if (getchar() == '\n') break; 
-            }
-
-        this->faceVertices.push_back(faceVertices);
-    }
-
-    constructEdges();
-
-}
+// to-do : load()
 
 bool Mesh::faceDoesExist(int idx){
     if (faces.size() == 0){
@@ -89,39 +50,12 @@ Face* Mesh::createNewFace(int idx){
 
 void Mesh::printHalfEdge(HalfEdge* he){
     std::cout << "HalfEdge: " << he << std::endl;
-    std::cout << "Origin: " << he->origin->x << " " << he->origin->y << std::endl;
+    std::cout << "Origin: " << he->origin->x << " " << he->origin->y << " " << he->origin->z << std::endl;
     std::cout << "Left Face: " << he->leftFace << std::endl;
-    std::cout << "Next: " << he->next->origin->x << " " << he->next->origin->y << std::endl;
-    if (he->prev) std::cout << "Prev: " << he->prev->origin->x << " " << he->prev->origin->y << std::endl;
+    std::cout << "Next: " << he->next->origin->x << " " << he->next->origin->y << " " << he->next->origin->z << std::endl;
+    if (he->prev) std::cout << "Prev: " << he->prev->origin->x << " " << he->prev->origin->y << " " << he->prev->origin->z << std::endl;
     else std::cout << "Prev: NULL" << std::endl;
-    std::cout << "Twin: " << he->twin->origin->x << " " << he->twin->origin->y << std::endl;
-}
-
-/*
-    Função que constrói as arestas a partir dos vértices
-    Cada aresta é representada por um par de vértices
-    Como mais de uma aresta pode ser criada, é necessário armazenar as arestas em um HashMap
-*/
-void Mesh::constructEdges(){
-	Edge* edge;
-	int idxOrig;
-	int idxDest;
-	unsigned int size;
-
-	for (unsigned int i = 0; i < nFaces; i++){
-		size = faceVertices[i].size();
-
-		for(unsigned int j = 0; j < size; j++){
-			idxOrig = faceVertices[i][j] - 1;
-			idxDest = faceVertices[i][(j+1) % size] - 1;
-            edge = new Edge;
-            edge->dest = idxDest;
-            edge->faceIdx = i;
-
-			edgesMap[idxOrig].push_back(edge);
-		}			
-	}
-	constructHalfEdges();
+    std::cout << "Twin: " << he->twin->origin->x << " " << he->twin->origin->y << " " << he->twin->origin->z << std::endl;
 }
 
 /**
@@ -145,60 +79,7 @@ HalfEdge* Mesh::createHalfEdgeNode(Vertice* origin, int faceIdx, int idx){
     return he;
 }
 
-/*
-    Função que constrói as semi-arestas a partir das arestas
-*/
-void Mesh::constructHalfEdges(){
-    int idx = 0;
-
-    std::unordered_map<int, vector<Edge*>> edgesToProcess = edgesMap;
-    for (auto edgeVector = edgesToProcess.begin(); edgeVector != edgesToProcess.end(); ++edgeVector) {
-        int origin = edgeVector->first;
-        auto& edgeList = edgeVector->second;
-
-        for (Edge* edge : edgeList) {
-            int dest = edge->dest;
-
-            if (origin > dest) continue;
-
-            HalfEdge* he = createHalfEdgeNode(vertices[origin], edge->faceIdx, idx++);
-            HalfEdge* twin = nullptr;
-            nHalfEdges++;
-
-            // Como um vértice pode ter mais de uma semi-aresta, é necessário verificar todos os candidatos 
-            if (edgesToProcess.count(dest)) {
-                auto& candidateList = edgesToProcess[dest];
-                for (auto it = candidateList.begin(); it != candidateList.end(); ++it) {
-                    if ((*it)->dest == origin) {
-                        twin = createHalfEdgeNode(vertices[dest], (*it)->faceIdx, idx++);
-                        nHalfEdges++;
-                        candidateList.erase(it); // Remove o twin do edgesToProcess
-                        break;
-                    }
-                }
-            }
-
-            if (!twin){
-                // Se não encontrar a semi-aresta simétrica, significa que a malha não é válida
-                return;
-            }
-
-            he->twin = twin;
-            twin->twin = he;
-
-            halfEdges.push_back(he);
-            halfEdges.push_back(twin);
-        }
-    }
-    for (HalfEdge *he : halfEdges){
-        findNext(he);
-    }
-
-    for (HalfEdge *he : halfEdges){
-        findPrev(he);
-        // printHalfEdge(he);
-    }
-}
+// to-do: constructInitialHalfEdges()
 
 /*
     Para saber o próximo, é necessário checar a origem da simétrica da semi-aresta i
@@ -233,6 +114,67 @@ void Mesh::findPrev(HalfEdge* he){
     }
 
     he->prev = prev;
+}
+
+HalfEdge* isPointColinearWithFace(Face* f, Vertice* v){
+    HalfEdge* he = f->halfEdge;
+
+    do {
+        // Verifica se o ponto está colinear com a semi-aresta
+        if (orientation(he->origin, he->next->origin, v) == 0 && onSegment(he->origin, v, he->next->origin)) {
+            return he; 
+        }
+        he = he->next;
+    } while (he != f->halfEdge);
+
+    return nullptr;
+}
+
+/*
+    Função que verifica se um vértice está dentro de uma face
+    A ideia é verificar se o ponto está dentro do polígono definido pela face
+*/
+int Mesh::isPointLeft(Face* f, Vertice* v){
+    HalfEdge* temp = f->halfEdge; 
+    int count = 0;
+    do {
+        // Vertifica se o ponto está à esquerda da semi-aresta
+        if (orientation(temp->origin, temp->next->origin, v) == 2)
+            count++;
+
+        temp = temp->next;
+    } while (temp != he);
+
+    if (count % 2 == 1) {
+        return true; // O ponto está dentro da face
+    }
+}
+
+/*
+    Insere um HalfEdge colinar entre duas semi-arestas
+*/
+void Mesh::insertNewHalfEdgeBetweenEdges(Face* f, HalfEdge* newHe, HalfEdge* prevHe){
+    HalfEdge* nextTemp = prevHe->next;
+    newHe->leftFace = f;
+
+    prevHe->next = newHe;
+    newHe->prev = prevHe;
+
+    newHe->next = nextTemp;
+    nextTemp->prev = newHe;
+}
+
+/*
+    Função que contrói uma nova semi-aresta colinear
+*/
+void Mesh::constructNewColinearHalfEdge(Face* f, Vertice* v, HalfEdge* he){
+    HalfEdge* newHe = createHalfEdgeNode(v, f->idx, nHalfEdges++);
+    HalfEdge* newTwin = createHalfEdgeNode(v, f->idx, nHalfEdges++);    // revisar - f->idx
+    newHe->twin = newTwin;
+    newTwin->twin = newHe;
+
+    insertNewHalfEdgeBetweenEdges(f, newHe, he);
+    insertNewHalfEdgeBetweenEdges(f, newTwin, he->twin);
 }
 
 /*

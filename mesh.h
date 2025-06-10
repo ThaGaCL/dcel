@@ -34,7 +34,10 @@ class Mesh {
         unsigned int nHalfEdges = 0;
 
         bool faceDoesExist(int idx);
-        bool checkIfVertexExists(int x, int y);
+        bool checkIfVertexExists(int x, int y, int z);
+
+        void addVertexToMesh(int x, int y, int z);
+
         bool isOpen();
         bool isSubdivPlanar();
         bool isOverlapped();
@@ -42,7 +45,7 @@ class Mesh {
 
         Face* createNewFace(int idx);
         HalfEdge* createHalfEdgeNode(Vertice* origin, int faceIdx, int idx);
-        Vertice* createNewVertex(int x, int y, int idx);
+        Vertice* createNewVertex(int x, int y, int z, int idx);
 
         void findNext(HalfEdge* he);
         void findPrev(HalfEdge* he);

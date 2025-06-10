@@ -9,6 +9,7 @@ typedef struct Face Face;
 typedef struct {
     int x;
     int y;
+    int z;
     int idx;                        
     HalfEdge* halfEdge;                     // Pointeiro para uma semi-aresta que tem v como origem (halfEdge(v))
 } Vertice;
