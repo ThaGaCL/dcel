@@ -39,53 +39,34 @@ void Mesh::defineFace(Vertice* v1, Vertice* v2, Vertice* v3, int idx){
     he3->next = he1; he3->prev = he2;
 }
 
-// // Cria a face externa do tetraedro conectando v1, v2, v3, v4
-// void Mesh::constructExternalFace(Vertice* v1, Vertice* v2, Vertice* v3, Vertice* v4){
-//     Face* f = createNewFace(nFaces++);
-//     if (!f) return;
+void Mesh::findTwin(HalfEdge* he) {
+    Vertice* from = he->origin;
+    Vertice* to = he->next->origin;
 
-//     // Cria as 6 semi-arestas da face externa (v1-v2, v2-v3, v3-v1, v1-v4, v2-v4, v3-v4)
-//     HalfEdge* he1 = createHalfEdgeNode(v3, f->idx, nHalfEdges++);
-//     HalfEdge* he2 = createHalfEdgeNode(v2, f->idx, nHalfEdges++);
-//     HalfEdge* he3 = createHalfEdgeNode(v1, f->idx, nHalfEdges++);
-//     HalfEdge* he4 = createHalfEdgeNode(v4, f->idx, nHalfEdges++);
-//     HalfEdge* he5 = createHalfEdgeNode(v4, f->idx, nHalfEdges++);
-//     HalfEdge* he6 = createHalfEdgeNode(v4, f->idx, nHalfEdges++);
+    for (HalfEdge* candidate : halfEdges) {
+        if (candidate == he || candidate->twin != nullptr)
+            continue;
 
-//     // ligação na ordem anti-horária
-//     he1->next = he5; he1->prev = he4;
-//     he2->next = he6; he2->prev = he5;
-//     he3->next = he4; he3->prev = he6;    
-//     he4->next = he1; he4->prev = he3;
-//     he5->next = he2; he5->prev = he1;
-//     he6->next = he3; he6->prev = he2;
-// }
-
-void Mesh::findTwin(HalfEdge* he){
-    HalfEdge* twin = NULL;
-
-    for (HalfEdge* h : halfEdges){
-        // Verifica se a semi-aresta é a simétrica
-        if (h->origin == he->next->origin && h->leftFace != he->leftFace){
-            twin = h;
-            twin->twin = he;
-            he->twin = twin;
+        if (candidate->origin == to &&
+            candidate->next->origin == from &&
+            candidate->leftFace != he->leftFace)
+        {
+            he->twin = candidate;
+            candidate->twin = he;
             printHalfEdge(he);
             break;
         }
     }
 }
 
-// to-do : load()
 // os primeiros três vértices formam um plano, enquanto o quarto vértice é o topo do tetraedro
 void Mesh::loadTetrahedron(Vertice* v1, Vertice* v2, Vertice* v3, Vertice* v4){
     if (!v1 || !v2 || !v3 || !v4) return;
 
-    // Define as faces do tetraedro
     defineFace(v1, v2, v3, nFaces++);
-    defineFace(v1, v2, v4, nFaces++);
-    defineFace(v1, v3, v4, nFaces++);
-    defineFace(v2, v3, v4, nFaces++);
+    defineFace(v1, v4, v2, nFaces++);
+    defineFace(v2, v4, v3, nFaces++);
+    defineFace(v3, v4, v1, nFaces++);
 
     for (HalfEdge* he : halfEdges){
         findTwin(he);
