@@ -62,11 +62,11 @@ void Mesh::findTwin(HalfEdge* he) {
 // os primeiros três vértices formam um plano, enquanto o quarto vértice é o topo do tetraedro
 void Mesh::loadTetrahedron(Vertice* v1, Vertice* v2, Vertice* v3, Vertice* v4){
     if (!v1 || !v2 || !v3 || !v4) return;
-
+    
     defineFace(v1, v2, v3, nFaces++);
+    defineFace(v4, v1, v3, nFaces++);
+    defineFace(v3, v2, v4, nFaces++);
     defineFace(v1, v4, v2, nFaces++);
-    defineFace(v2, v4, v3, nFaces++);
-    defineFace(v3, v4, v1, nFaces++);
 
     for (HalfEdge* he : halfEdges){
         findTwin(he);
@@ -103,7 +103,7 @@ void Mesh::printHalfEdge(HalfEdge* he){
         std::cout << "Origin: NULL" << std::endl;
 
     if (he->leftFace)
-        std::cout << "Left Face: " << he->leftFace << std::endl;
+        std::cout << "Left Face: " << he->leftFace->idx + 1<< std::endl;
     else
         std::cout << "Left Face: NULL" << std::endl;
 
