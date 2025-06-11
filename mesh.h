@@ -29,6 +29,11 @@ class Mesh {
         void constructNewColinearHalfEdge(Face* f, Vertice* v, HalfEdge* he);
         int isPointLeft(Face* f, Vertice* v);
         Vertice* createNewVertex(int x, int y, int z);
+
+        VERTICES getVertices() { return vertices; }
+        FACES getFaces() { return faces; }
+        HALF_EDGES getHalfEdges() { return halfEdges; }
+
         
     private:
         unsigned int nVertices = 0;
