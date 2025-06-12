@@ -65,8 +65,8 @@ class Mesh {
         FACES faces;
         HALF_EDGES halfEdges;
         FACE_VERTICES faceVertices; 
-        EDGES edges;                   
-		unordered_map<int, vector<Edge*>> edgesMap;
+        // EDGES edges;                   
+		// unordered_map<int, vector<Edge*>> edgesMap;
 };
 
 #endif

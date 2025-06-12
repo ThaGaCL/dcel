@@ -39,20 +39,34 @@ void Mesh::defineFace(Vertice* v1, Vertice* v2, Vertice* v3, int idx){
     he3->next = he1; he3->prev = he2;
 }
 
-void Mesh::findTwin(HalfEdge* he) {
-    Vertice* from = he->origin;
-    Vertice* to = he->next->origin;
+// void Mesh::findTwin(HalfEdge* he) {
+//     if (he->twin != nullptr) return;
 
-    for (HalfEdge* candidate : halfEdges) {
-        if (candidate == he || candidate->twin != nullptr)
-            continue;
+//     for (HalfEdge* candidate : halfEdges) {
+//         if (candidate == he || candidate->twin != nullptr)
+//             continue;
 
-        if (candidate->origin == to &&
-            candidate->next->origin == from &&
-            candidate->leftFace != he->leftFace)
-        {
-            he->twin = candidate;
-            candidate->twin = he;
+//         // Checa se as semi-arestas são opostas
+//         if (he->origin == candidate->next->origin &&
+//             he->next->origin == candidate->origin &&
+//             he->leftFace != candidate->leftFace)
+//         {
+//             he->twin = candidate;
+//             candidate->twin = he;
+//             printHalfEdge(he); // Opcional: debug
+//             break;
+//         }
+//     }
+// }
+void Mesh::findTwin(HalfEdge* he){
+    HalfEdge* twin = NULL;
+
+    for (HalfEdge* h : halfEdges){
+        // Verifica se a semi-aresta é a simétrica
+        if (h->origin == he->next->origin && h->leftFace != he->leftFace){
+            twin = h;
+            twin->twin = he;
+            he->twin = twin;
             printHalfEdge(he);
             break;
         }
@@ -64,9 +78,9 @@ void Mesh::loadTetrahedron(Vertice* v1, Vertice* v2, Vertice* v3, Vertice* v4){
     if (!v1 || !v2 || !v3 || !v4) return;
     
     defineFace(v1, v2, v3, nFaces++);
-    defineFace(v4, v1, v3, nFaces++);
-    defineFace(v3, v2, v4, nFaces++);
-    defineFace(v1, v4, v2, nFaces++);
+    defineFace(v1, v2, v4, nFaces++);
+    defineFace(v1, v3, v4, nFaces++);
+    defineFace(v2, v3, v4, nFaces++);
 
     for (HalfEdge* he : halfEdges){
         findTwin(he);
