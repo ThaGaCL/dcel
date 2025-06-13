@@ -28,7 +28,11 @@ class Mesh {
         void insertNewHalfEdgeBetweenEdges(Face* f, HalfEdge* newHe, HalfEdge* prevHe);
         void constructNewColinearHalfEdge(Face* f, Vertice* v, HalfEdge* he);
         int isPointLeft(Face* f, Vertice* v);
+        void removeFace(Face* f);
+
         Vertice* createNewVertex(int x, int y, int z);
+        Face* createNewFace(Vertice* v1, HalfEdge* he);
+        void printHalfEdge(HalfEdge* he);
 
         VERTICES getVertices() { return vertices; }
         FACES getFaces() { return faces; }
@@ -59,7 +63,6 @@ class Mesh {
 
         void findNext(HalfEdge* he);
         void findPrev(HalfEdge* he);
-        void printHalfEdge(HalfEdge* he);
 
         VERTICES vertices;                
         FACES faces;

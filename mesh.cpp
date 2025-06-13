@@ -26,6 +26,35 @@ Vertice* Mesh::createNewVertex(int x, int y, int z){
     return v;
 }
 
+/*
+    Cria uma nova face triangular com um vértice e uma semi-aresta
+*/
+Face* Mesh::createNewFace(Vertice* v1, HalfEdge* he){
+    if (!v1 || !he) return NULL;
+
+    Face* f = createNewFace(nFaces++);
+    cout << "Creating face with index: " << f->idx + 1 << endl;
+    if (!f) return NULL;
+
+    f->halfEdge = he;
+    he->leftFace = f;
+
+    Vertice* v2 = he->next->origin;
+    
+    HalfEdge* he1 = createHalfEdgeNode(v1, f->idx, nHalfEdges++);
+    HalfEdge* he2 = createHalfEdgeNode(v2, f->idx, nHalfEdges++);
+
+    he1->next = he2;
+    he1->prev = he;
+    he2->next = he;
+    he2->prev = he1;
+    he->next = he1;
+    he->prev = he2;
+
+    return f;
+    
+}
+
 void Mesh::defineFace(Vertice* v1, Vertice* v2, Vertice* v3, int idx){
     Face* f = createNewFace(idx);
     if (!f) return;
@@ -39,35 +68,15 @@ void Mesh::defineFace(Vertice* v1, Vertice* v2, Vertice* v3, int idx){
     he3->next = he1; he3->prev = he2;
 }
 
-// void Mesh::findTwin(HalfEdge* he) {
-//     if (he->twin != nullptr) return;
-
-//     for (HalfEdge* candidate : halfEdges) {
-//         if (candidate == he || candidate->twin != nullptr)
-//             continue;
-
-//         // Checa se as semi-arestas são opostas
-//         if (he->origin == candidate->next->origin &&
-//             he->next->origin == candidate->origin &&
-//             he->leftFace != candidate->leftFace)
-//         {
-//             he->twin = candidate;
-//             candidate->twin = he;
-//             printHalfEdge(he); // Opcional: debug
-//             break;
-//         }
-//     }
-// }
 void Mesh::findTwin(HalfEdge* he){
     HalfEdge* twin = NULL;
 
     for (HalfEdge* h : halfEdges){
         // Verifica se a semi-aresta é a simétrica
-        if (h->origin == he->next->origin && h->leftFace != he->leftFace){
-            twin = h;
-            twin->twin = he;
-            he->twin = twin;
-            printHalfEdge(he);
+        if (h->origin == he->next->origin && h->next->origin == he->origin)
+        {
+            he->twin = h;
+            h->twin = he;
             break;
         }
     }
@@ -77,10 +86,14 @@ void Mesh::findTwin(HalfEdge* he){
 void Mesh::loadTetrahedron(Vertice* v1, Vertice* v2, Vertice* v3, Vertice* v4){
     if (!v1 || !v2 || !v3 || !v4) return;
     
+    // defineFace(v1, v2, v3, nFaces++);
+    // defineFace(v1, v2, v4, nFaces++);
+    // defineFace(v1, v3, v4, nFaces++);
+    // defineFace(v2, v3, v4, nFaces++);
     defineFace(v1, v2, v3, nFaces++);
-    defineFace(v1, v2, v4, nFaces++);
-    defineFace(v1, v3, v4, nFaces++);
-    defineFace(v2, v3, v4, nFaces++);
+    defineFace(v1, v4, v2, nFaces++);
+    defineFace(v2, v4, v3, nFaces++);
+    defineFace(v3, v4, v1, nFaces++);
 
     for (HalfEdge* he : halfEdges){
         findTwin(he);
@@ -257,6 +270,46 @@ void Mesh::constructNewColinearHalfEdge(Face* f, Vertice* v, HalfEdge* he){
     insertNewHalfEdgeBetweenEdges(f, newTwin, he->twin);
 }
 
+void adjustIndexesAfterFaceRemoval(FACES& faces){
+    for (unsigned int i = 0; i < faces.size(); i++){
+        if (faces[i]) {
+            faces[i]->idx = i;
+        }
+    }
+}
+
+void Mesh::removeFace(Face* f){
+    if (!f) return;
+
+    // Remove a face da lista de faces
+    for (auto it = faces.begin(); it != faces.end(); ++it) {
+        if (*it == f) {
+            faces.erase(it);
+            break;
+        }
+    }
+
+    // Remove as semi-arestas associadas à face
+    HalfEdge* he = f->halfEdge;
+    if (!he) return;
+    do {
+        // Remove a semi-aresta da lista de semi-arestas
+        for (auto it = halfEdges.begin(); it != halfEdges.end(); ++it) {
+            if (*it == he) {
+                halfEdges.erase(it);
+                nHalfEdges--;
+                break;
+            }
+        }
+        he = he->next;
+    } while (he != f->halfEdge);
+
+    // Deleta a face
+    delete f;
+    adjustIndexesAfterFaceRemoval(faces);
+    nFaces--; 
+}
+
 /*
     identificar se é aberta : alguma aresta é fronteira de somente uma face
 */
@@ -265,7 +318,7 @@ bool Mesh::isOpen(){
     Face* f;
 
     // A topologia de cada face é percorrida pela lista circular
-    for (unsigned int i = 0; i < nFaces; i++){
+    for (unsigned int i = 0; i < faces.size(); i++){
         f = faces[i];
         if (!f)
         return true;
@@ -298,7 +351,7 @@ bool Mesh::isSubdivPlanar(){
 
     // A topologia de cada face é percorrida pela lista circular
     // A ideia é coletar as faces que estão ligadas a uma aresta
-    for (unsigned int i = 0; i < nFaces; i++){
+    for (unsigned int i = 0; i < faces.size(); i++){
         f = faces[i];
         temp = f->halfEdge;
 
@@ -383,7 +436,7 @@ void Mesh::printDCEL(){
         printf("%d %d %d\n", vertices[i]->x, vertices[i]->y, vertices[i]->halfEdge->idx+1);
     }
 
-    for (unsigned int i = 0; i < nFaces; i++){
+    for (unsigned int i = 0; i < faces.size(); i++){
         printf("%d\n", faces[i]->halfEdge->idx+1);
     }
 
