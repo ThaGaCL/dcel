@@ -29,6 +29,7 @@ class Mesh {
         void constructNewColinearHalfEdge(Face* f, Vertice* v, HalfEdge* he);
         int isPointLeft(Face* f, Vertice* v);
         void removeFace(Face* f);
+        void findTwin(HalfEdge* he);
 
         Vertice* createNewVertex(int x, int y, int z);
         Face* createNewFace(Vertice* v1, HalfEdge* he);
@@ -51,7 +52,6 @@ class Mesh {
 
         void defineFace(Vertice *v1, Vertice *v2, Vertice *v3, int idx);
         void constructExternalFace(Vertice* v1, Vertice* v2, Vertice* v3, Vertice* v4);
-        void findTwin(HalfEdge* he);
 
         bool isOpen();
         bool isSubdivPlanar();

@@ -4,31 +4,71 @@
     Função que cria um novo evento
     Retorna o evento criado
 */
-Event* createNewEvent(Vertice* v, EventType t, HalfEdge* h){
+Event* SweepLine::createNewEvent(Point* origin, Point* destination, EventType t){
     Event* e = new Event();
-    e->vertex = v;
+    e->edge = new sweepLineEdge();
+    e->edge->origin = origin;
+    e->edge->destination = destination;
     e->type = t;
-    e->halfEdge = h;
 
     return e;
 }
+
+Point* SweepLine::searchPoint(int x, int y, int z){
+    for (Point* p : points){
+        if (p->x == x && p->y == y && p->z == z){
+            return p;
+        }
+    }
+    return nullptr;
+}
+
+/*
+    Função que cria um novo ponto
+    Retorna o ponto criado
+*/
+Point* SweepLine::createNewPoint(int x, int y, int z){
+    Point* p = searchPoint(x, y, z);
+    if (p) return p;
+
+    p = new Point();
+    p->x = x;
+    p->y = y;
+    p->z = z;
+
+    points.push_back(p);
+    return p;
+}
+
+
+/*
+    Função que cria uma nova aresta
+*/
+sweepLineEdge* SweepLine::createNewsweepLineEdge(Point* origin, Point* destination) {
+    sweepLineEdge* e = new sweepLineEdge();
+    e->origin = origin;
+    e->destination = destination;
+
+    return e;
+}
+
 
 /*
     Função que insere os eventos na fila de eventos
     A fila de eventos é uma min-heap, onde o menor elemento é o primeiro a ser removido
 */
-void SweepLine::insertHalfEdgesHeap(HalfEdge* h) {
-    if (!h) return;
+void SweepLine::insertsweepLineEdgesHeap(sweepLineEdge* edge) {
+    if (!edge) return;
 
-    Vertice* left = h->origin;
-    Vertice* right = h->twin->origin;    
+    Point* left = edge->origin;
+    Point* right = edge->destination;
 
     if ((left->x < right->x) || ((left->x == right->x) && (left->y < right->y))){
-        eventQueue.push(createNewEvent(left, LEFT_ENDPOINT, h));
-        eventQueue.push(createNewEvent(right, RIGHT_ENDPOINT, h));
+        eventQueue.push(createNewEvent(left, right, LEFT_ENDPOINT));
+        eventQueue.push(createNewEvent(right, left, RIGHT_ENDPOINT));
     } else {
-        eventQueue.push(createNewEvent(left, RIGHT_ENDPOINT, h->twin));
-        eventQueue.push(createNewEvent(right, LEFT_ENDPOINT, h->twin));
+        eventQueue.push(createNewEvent(left, right, RIGHT_ENDPOINT));
+        eventQueue.push(createNewEvent(right, left, LEFT_ENDPOINT));
     }
 
 }
@@ -37,61 +77,27 @@ void SweepLine::insertHalfEdgesHeap(HalfEdge* h) {
     Função que verifica a orientação dos pontos
     Retorna 0 se colinear, 1 se horário e 2 se anti-horário
 */
-int orientation(Vertice* a, Vertice* b, Vertice* c){
+int orientation(Point* a, Point* b, Point* c) {
     int val = (b->y - a->y) * (c->x - b->x) - (b->x - a->x) * (c->y - b->y);
     if (val == 0) return 0; // Casos colineares
     return (val > 0) ? 1 : 2; // Horário ou anti-horário
 }
 
-bool onSegment(Vertice* p, Vertice* q, Vertice* r){
+bool onSegment(Point* p, Point* q, Point* r){
     return (q->x <= std::max(p->x, r->x) && q->x >= std::min(p->x, r->x) &&
             q->y <= std::max(p->y, r->y) && q->y >= std::min(p->y, r->y));
 }
 
-// Verifica se a aresta atual está dentro de outra face
-bool isInsideAnotherFace(HalfEdge* prev, HalfEdge* current){
-    Face* currentFace = current->leftFace;
-    Face* prevFace = prev->leftFace;
-
-    if (currentFace == prevFace) return false;
-
-    // Verifica se todos os pontos da aresta atual estão dentro da face anterior
-    HalfEdge* temp = prevFace->halfEdge;
-    do {
-        if (orientation(temp->origin, temp->next->origin, current->origin) != 2) {
-            return false; 
-        }
-        temp = temp->next;
-    } while (temp != prevFace->halfEdge);
-
-    // Verifica o segundo ponto da aresta atual
-    temp = prevFace->halfEdge;
-    do {
-        if (orientation(temp->origin, temp->next->origin, current->twin->origin) != 2) {
-            return false; 
-        }
-        temp = temp->next;
-    } while (temp != prevFace->halfEdge);
-
-    return true; 
-}
-
-bool intersection(HalfEdge& prev, HalfEdge& current){
+bool intersection(sweepLineEdge& prev, sweepLineEdge& current) {
     // Pular caso as arestas são irmãs (dividem um endpoint)
     // if (prev.origin == current.twin->origin || current.origin == prev.twin->origin) {
     //     return false;
     // }
 
-    Vertice* p1 = prev.origin;
-    Vertice* q1 = prev.twin->origin;
-    Vertice* p2 = current.origin;
-    Vertice* q2 = current.twin->origin;
-
-    // Verifica se a aresta atual está dentro de outra face
-    // Se a aresta atual está dentro de outra face, há superposição
-    if (isInsideAnotherFace(&prev, &current)) {
-        return true;
-    }
+    Point* p1 = prev.origin;
+    Point* q1 = prev.destination;
+    Point* p2 = current.origin;
+    Point* q2 = current.destination;
 
     if (p1 == p2 || p1 == q2 || q1 == p2 || q1 == q2) {
         return false;
@@ -114,10 +120,10 @@ bool intersection(HalfEdge& prev, HalfEdge& current){
     return false;
 };
 
-void printStatus(set<HalfEdge*, SetComparator>& status){
+void printStatus(set<sweepLineEdge*, SetComparator>& status){
     printf("status: ");
     for (auto it = status.begin(); it != status.end(); ++it) {
-        printf("(%d, %d)-(%d, %d) ", (*it)->origin->x, (*it)->origin->y, (*it)->twin->origin->x, (*it)->twin->origin->y);
+        printf("(%d, %d)-(%d, %d) ", (*it)->origin->x, (*it)->origin->y, (*it)->destination->x, (*it)->destination->y);
     }
     printf("\n");
 }
@@ -127,19 +133,19 @@ void printStatus(set<HalfEdge*, SetComparator>& status){
     Retorna true se houver interseção
 */
 bool SweepLine::addEvent(Event* e){
-    auto first = status.insert(e->halfEdge).first;
+    auto first = status.insert(e->edge).first;
     // printStatus(status);
     
     // caso não seja o primeiro nodo, é necessário verificar intersecção 
     if (first != status.begin()){
         auto prev = first; prev--;
-        if (intersection(**prev, *e->halfEdge)){
+        if (intersection(**prev, *e->edge)){
             return true;
         }
         
         auto next = first; next++;
         if (next != status.end()){
-            if (intersection(**next, *e->halfEdge)){
+            if (intersection(**next, *e->edge)){
                 return true;
             }
         }
@@ -152,7 +158,7 @@ bool SweepLine::addEvent(Event* e){
     Retorna true se houver interseção
 */
 bool SweepLine::removeEvent(Event* e){
-    auto node = status.find(e->halfEdge);
+    auto node = status.find(e->edge);
     if (node == status.end()) return false;
 
     auto prev = node;
@@ -172,35 +178,69 @@ bool SweepLine::removeEvent(Event* e){
     return false;
 }
 
+/*
+    Libera a memória de todos os eventos restantes na fila de eventos
+*/
+void SweepLine::freeEventQueue() {
+    while (!eventQueue.empty()) {
+        Event* e = eventQueue.top();
+        eventQueue.pop();
+        freeEvent(e);
+    }
+}
+
+/*
+    Função que libera a memória de um evento
+*/
+void SweepLine::freeEvent(Event* e) {
+    if (e) destroyEvent(e);
+    
+}
+
+/*
+    Libera a memória do vetor de pontos
+*/
+void SweepLine::freePoints(){
+    for (Point* p : points){
+        destroyPoint(p);
+    }
+}
 
 /*
     Função que verifica se inicia o sweep line 
     Retorna true se houver interseção
 */
-bool SweepLine::findIntersection(HALF_EDGES halfEdges){
-    for (HalfEdge* h : halfEdges){
-        insertHalfEdgesHeap(h);    
+bool SweepLine::findIntersection(EDGES edges){
+    for (sweepLineEdge* h : edges){
+        insertsweepLineEdgesHeap(h);
     }
 
     while (!eventQueue.empty()){
         Event* e = eventQueue.top();
-        sweepY = e->vertex->y;
+        sweepY = e->edge->origin->y;
         comparator.sweepY = sweepY;
 
         eventQueue.pop();
 
         switch (e->type){
             case LEFT_ENDPOINT:
-                if (addEvent(e)) return true;
+                if (addEvent(e)) {
+                    freeEvent(e);
+                    freeEventQueue();
+                    return true;
+                }
                 break;
             case RIGHT_ENDPOINT:
-                if (removeEvent(e)) return true;
+                if (removeEvent(e)) {
+                    freeEvent(e);
+                    freeEventQueue();
+                    return true;
+                }
                 break;
-            // case INTERSECTION:
-            //     return true;
             default:
                 break;
         }
+        freeEvent(e);
     }
 
     return false;

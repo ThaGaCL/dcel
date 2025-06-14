@@ -29,30 +29,35 @@ Vertice* Mesh::createNewVertex(int x, int y, int z){
 /*
     Cria uma nova face triangular com um vértice e uma semi-aresta
 */
-Face* Mesh::createNewFace(Vertice* v1, HalfEdge* he){
-    if (!v1 || !he) return NULL;
+Face* Mesh::createNewFace(Vertice* pr, HalfEdge* he) {
+    if (!pr || !he) return NULL;
 
     Face* f = createNewFace(nFaces++);
     cout << "Creating face with index: " << f->idx + 1 << endl;
     if (!f) return NULL;
 
-    f->halfEdge = he;
-    he->leftFace = f;
-
     Vertice* v2 = he->next->origin;
-    
-    HalfEdge* he1 = createHalfEdgeNode(v1, f->idx, nHalfEdges++);
-    HalfEdge* he2 = createHalfEdgeNode(v2, f->idx, nHalfEdges++);
 
+    HalfEdge* he1 = createHalfEdgeNode(v2, f->idx, nHalfEdges++);
+    HalfEdge* he2 = createHalfEdgeNode(pr, f->idx, nHalfEdges++);
+    HalfEdge* he3 = createHalfEdgeNode(he->origin, f->idx, nHalfEdges++);
+    he3->twin = he->twin;
+
+    he3->next = he1;
     he1->next = he2;
-    he1->prev = he;
-    he2->next = he;
+    he2->next = he3;
+
+    he3->prev = he2;
+    he1->prev = he3;
     he2->prev = he1;
-    he->next = he1;
-    he->prev = he2;
+
+    he3->leftFace = f;
+    he1->leftFace = f;
+    he2->leftFace = f;
+
+    f->halfEdge = he1;
 
     return f;
-    
 }
 
 void Mesh::defineFace(Vertice* v1, Vertice* v2, Vertice* v3, int idx){
@@ -209,67 +214,6 @@ void Mesh::findPrev(HalfEdge* he){
     he->prev = prev;
 }
 
-HalfEdge* isPointColinearWithFace(Face* f, Vertice* v){
-    HalfEdge* he = f->halfEdge;
-
-    do {
-        // Verifica se o ponto está colinear com a semi-aresta
-        if (orientation(he->origin, he->next->origin, v) == 0 && onSegment(he->origin, v, he->next->origin)) {
-            return he; 
-        }
-        he = he->next;
-    } while (he != f->halfEdge);
-
-    return nullptr;
-}
-
-/*
-    Função que verifica se um vértice está dentro de uma face
-    A ideia é verificar se o ponto está dentro do polígono definido pela face
-*/
-int Mesh::isPointLeft(Face* f, Vertice* v){
-    HalfEdge* temp = f->halfEdge; 
-    int count = 0;
-    do {
-        // Vertifica se o ponto está à esquerda da semi-aresta
-        if (orientation(temp->origin, temp->next->origin, v) == 2)
-            count++;
-
-        temp = temp->next;
-    } while (temp != f->halfEdge);
-
-    if (count % 2 == 1) {
-        return true; // O ponto está dentro da face
-    }
-}
-
-/*
-    Insere um HalfEdge colinar entre duas semi-arestas
-*/
-void Mesh::insertNewHalfEdgeBetweenEdges(Face* f, HalfEdge* newHe, HalfEdge* prevHe){
-    HalfEdge* nextTemp = prevHe->next;
-    newHe->leftFace = f;
-
-    prevHe->next = newHe;
-    newHe->prev = prevHe;
-
-    newHe->next = nextTemp;
-    nextTemp->prev = newHe;
-}
-
-/*
-    Função que contrói uma nova semi-aresta colinear
-*/
-void Mesh::constructNewColinearHalfEdge(Face* f, Vertice* v, HalfEdge* he){
-    HalfEdge* newHe = createHalfEdgeNode(v, f->idx, nHalfEdges++);
-    HalfEdge* newTwin = createHalfEdgeNode(v, f->idx, nHalfEdges++);    // revisar - f->idx
-    newHe->twin = newTwin;
-    newTwin->twin = newHe;
-
-    insertNewHalfEdgeBetweenEdges(f, newHe, he);
-    insertNewHalfEdgeBetweenEdges(f, newTwin, he->twin);
-}
-
 void adjustIndexesAfterFaceRemoval(FACES& faces){
     for (unsigned int i = 0; i < faces.size(); i++){
         if (faces[i]) {
@@ -383,44 +327,44 @@ bool Mesh::isSubdivPlanar(){
     return false; 
 }
 
-/*
-    Identifica se há auto-intersecção com o algoritmo sweep line
-*/
-bool Mesh::isOverlapped(){
-    SweepLine* sl = new SweepLine();
+// /*
+//     Identifica se há auto-intersecção com o algoritmo sweep line
+// */
+// bool Mesh::isOverlapped(){
+//     SweepLine* sl = new SweepLine();
 
-    if (sl->findIntersection(halfEdges))
-        return true;
+//     if (sl->findIntersection(halfEdges))
+//         return true;
 
-    return false;
-}
+//     return false;
+// }
 
-/*
-    Identifica se a malha é válida
-    Se a malha não for válida, retorna false
-    Se a malha for válida, retorna true
-*/
-bool Mesh::isTopologyValid(){
-    // identificar se é aberta : alguma aresta é fronteira de somente uma face
-    // identificar se não é subdivisão planar : alguma aresta é fronteira de mais de duas faces
-    // identificar se é superposta : alguma face tem auto-interseção ou intersecta outras faces
-    // caso esteja tudo certo, retornar true
+// /*
+//     Identifica se a malha é válida
+//     Se a malha não for válida, retorna false
+//     Se a malha for válida, retorna true
+// */
+// bool Mesh::isTopologyValid(){
+//     // identificar se é aberta : alguma aresta é fronteira de somente uma face
+//     // identificar se não é subdivisão planar : alguma aresta é fronteira de mais de duas faces
+//     // identificar se é superposta : alguma face tem auto-interseção ou intersecta outras faces
+//     // caso esteja tudo certo, retornar true
 
-    if (isOpen()) {
-        printf("aberta\n");
-        return false;
-    };
-    if (isSubdivPlanar()) {
-        printf("não subdivisão planar\n");
-        return false;
-    };
-    if (isOverlapped()) {
-        printf("superposta\n");
-        return false;
-    };
+//     if (isOpen()) {
+//         printf("aberta\n");
+//         return false;
+//     };
+//     if (isSubdivPlanar()) {
+//         printf("não subdivisão planar\n");
+//         return false;
+//     };
+//     if (isOverlapped()) {
+//         printf("superposta\n");
+//         return false;
+//     };
 
-    return true;
-}
+//     return true;
+// }
 
 /*
     Função que imprime a malha
