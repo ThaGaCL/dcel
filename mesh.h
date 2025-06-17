@@ -30,11 +30,12 @@ class Mesh {
         int isPointLeft(Face* f, Vertice* v);
         void removeFace(Face* f);
         void findTwin(HalfEdge* he);
+        void flipDiagonal(HalfEdge* he);
 
         Vertice* createNewVertex(int x, int y, int z);
-        Face* createNewFace(Vertice* v1, HalfEdge* he);
+        Face* createNewFace(Vertice* v1, Vertice* v2, Vertice* v3);
         void printHalfEdge(HalfEdge* he);
-
+        
         VERTICES getVertices() { return vertices; }
         FACES getFaces() { return faces; }
         HALF_EDGES getHalfEdges() { return halfEdges; }
@@ -44,12 +45,10 @@ class Mesh {
         unsigned int nVertices = 0;
         unsigned int nFaces = 0;
         unsigned int nHalfEdges = 0;
-
+        
         bool faceDoesExist(int idx);
         bool checkIfVertexExists(int x, int y, int z);
-
         void addVertexToMesh(int x, int y, int z);
-
         void defineFace(Vertice *v1, Vertice *v2, Vertice *v3, int idx);
         void constructExternalFace(Vertice* v1, Vertice* v2, Vertice* v3, Vertice* v4);
 
