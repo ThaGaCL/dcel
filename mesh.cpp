@@ -274,17 +274,17 @@ void Mesh::removeFace(Face* f){
     A quarta linha imprime a struct HalfEdge
 */
 void Mesh::printDCEL(){
-    printf("%d %d %d\n", nVertices, nHalfEdges/2, nFaces);
+    printf("%d %d %d\n", vertices.size(), halfEdges.size()/2, faces.size());
 
-    for (unsigned int i = 0; i < nVertices; i++){
-        printf("%d %d %d\n", vertices[i]->x, vertices[i]->y, vertices[i]->halfEdge->idx+1);
+    for (unsigned int i = 0; i < vertices.size(); i++){
+        printf("%d %d %d\n", vertices[i]->x, vertices[i]->y, vertices[i]->z);
     }
 
     for (unsigned int i = 0; i < faces.size(); i++){
         printf("%d\n", faces[i]->halfEdge->idx+1);
     }
 
-    for (unsigned int i = 0; i < nHalfEdges; i++){
+    for (unsigned int i = 0; i < halfEdges.size(); i++){
         printf("%d %d %d %d %d\n", halfEdges[i]->origin->idx+1, halfEdges[i]->twin->idx+1, halfEdges[i]->leftFace->idx+1, halfEdges[i]->next->idx+1, halfEdges[i]->prev->idx+1);
     }
 }
