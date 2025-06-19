@@ -24,18 +24,17 @@ class Mesh {
         };
         void loadTetrahedron(Vertice* v1, Vertice* v2, Vertice* v3, Vertice* v4);
         void printDCEL();
-        bool isTopologyValid();
-        void insertNewHalfEdgeBetweenEdges(Face* f, HalfEdge* newHe, HalfEdge* prevHe);
-        void constructNewColinearHalfEdge(Face* f, Vertice* v, HalfEdge* he);
-        int isPointLeft(Face* f, Vertice* v);
         void removeFace(Face* f);
+        void removeHalfEdge(HalfEdge* he);
+        void removeFaceKeepHalfEdges(Face* f);
         void findTwin(HalfEdge* he);
-        void flipDiagonal(HalfEdge* he);
 
         Vertice* createNewVertex(int x, int y, int z);
         Face* createNewFace(Vertice* v1, Vertice* v2, Vertice* v3);
+        Face* createNewFace(Vertice* v1, Vertice* v2, Vertice* v3, Vertice* v4);
         void printHalfEdge(HalfEdge* he);
         
+        Face* findFace(int idx);
         VERTICES getVertices() { return vertices; }
         FACES getFaces() { return faces; }
         HALF_EDGES getHalfEdges() { return halfEdges; }

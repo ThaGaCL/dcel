@@ -31,7 +31,6 @@ Vertice* Mesh::createNewVertex(int x, int y, int z){
 */
 Face* Mesh::createNewFace(Vertice* v1, Vertice* v2, Vertice* v3) {
     Face* f = createNewFace(nFaces++);
-    cout << "Creating face with index: " << f->idx + 1 << endl;
     if (!f) return NULL;
     
     // Now build the half-edges with corrected winding
@@ -58,6 +57,32 @@ Face* Mesh::createNewFace(Vertice* v1, Vertice* v2, Vertice* v3) {
     return f;
 }
 
+Face* Mesh::createNewFace(Vertice* v1, Vertice* v2, Vertice* v3, Vertice* v4){
+    Face* f = createNewFace(nFaces++);
+    if (!f) return NULL;
+
+    // Match the triangle orientation: he1 = v2, he2 = v3, he3 = v4, he4 = v1
+    HalfEdge* he1 = createHalfEdgeNode(v2, f->idx, nHalfEdges++);
+    HalfEdge* he2 = createHalfEdgeNode(v3, f->idx, nHalfEdges++);
+    HalfEdge* he3 = createHalfEdgeNode(v4, f->idx, nHalfEdges++);
+    HalfEdge* he4 = createHalfEdgeNode(v1, f->idx, nHalfEdges++);
+
+    // Set up the circular linked list of half-edges
+    he4->next = he1; he1->next = he2; he2->next = he3; he3->next = he4;
+    he4->prev = he3; he1->prev = he4; he2->prev = he1; he3->prev = he2;
+
+    // Set the left face for each half-edge
+    he1->leftFace = f;
+    he2->leftFace = f;
+    he3->leftFace = f;
+    he4->leftFace = f;
+
+    // Set the half-edge for the face
+    f->halfEdge = he1;
+
+    return f;
+}
+
 void Mesh::defineFace(Vertice* v1, Vertice* v2, Vertice* v3, int idx){
     Face* f = createNewFace(idx);
     if (!f) return;
@@ -76,8 +101,7 @@ void Mesh::findTwin(HalfEdge* he){
 
     for (HalfEdge* h : halfEdges){
         // Verifica se a semi-aresta é a simétrica
-        if (h->origin == he->next->origin && h->next->origin == he->origin)
-        {
+        if (h->origin == he->next->origin && h->next->origin == he->origin && h->leftFace != he->leftFace){
             he->twin = h;
             h->twin = he;
             break;
@@ -154,7 +178,7 @@ void Mesh::printHalfEdge(HalfEdge* he){
         std::cout << "Twin: NULL" << std::endl;
 }
 
-Face* findFace(FACES& faces, int idx) {
+Face* Mesh::findFace(int idx) {
     for (Face* f : faces) {
         if (f->idx == idx) {
             return f;
@@ -178,7 +202,7 @@ HalfEdge* Mesh::createHalfEdgeNode(Vertice* origin, int faceIdx, int idx){
 
     he->idx = idx;
 
-    Face* face = findFace(faces, faceIdx);
+    Face* face = findFace(faceIdx);
     if (!face) {
         delete he;
         return nullptr; 
@@ -236,6 +260,23 @@ void adjustIndexesAfterFaceRemoval(FACES& faces){
     }
 }
 
+void Mesh::removeHalfEdge(HalfEdge* he){
+    if (!he) return;
+
+    // Remove a semi-aresta da lista de semi-arestas
+    for (auto it = halfEdges.begin(); it != halfEdges.end(); ++it) {
+        if (*it == he) {
+            halfEdges.erase(it);
+            // nHalfEdges--;
+            break;
+        }
+    }
+
+    // Deleta a semi-aresta
+    delete he;
+    he = nullptr;
+}
+
 void Mesh::removeFace(Face* f){
     if (!f) return;
 
@@ -255,7 +296,7 @@ void Mesh::removeFace(Face* f){
         for (auto it = halfEdges.begin(); it != halfEdges.end(); ++it) {
             if (*it == he) {
                 halfEdges.erase(it);
-                nHalfEdges--;
+                // nHalfEdges--;
                 break;
             }
         }
@@ -264,27 +305,54 @@ void Mesh::removeFace(Face* f){
 
     // Deleta a face
     delete f;
+    f = nullptr;
 }
 
-/*
-    Função que imprime a malha
-    A primeira linha contém o número de vértices, arestas e faces
-    A segunda linha imprime a struct Vertice
-    A terceira linha imprime a struct Face
-    A quarta linha imprime a struct HalfEdge
-*/
+void Mesh::removeFaceKeepHalfEdges(Face* f){
+    if (!f) return;
+
+    // Remove a face da lista de faces
+    for (auto it = faces.begin(); it != faces.end(); ++it) {
+        if (*it == f) {
+            faces.erase(it);
+            break;
+        }
+    }
+
+    // Deleta a face
+    delete f;
+    f = nullptr;
+}
+
 void Mesh::printDCEL(){
-    printf("%d %d %d\n", vertices.size(), halfEdges.size()/2, faces.size());
+    std::unordered_map<Vertice*, int> vertIdx;
+    std::unordered_map<HalfEdge*, int> heIdx;
+    std::unordered_map<Face*, int> faceIdx;
+
+    for (unsigned int i = 0; i < vertices.size(); i++)
+        vertIdx[vertices[i]] = i;
+    for (unsigned int i = 0; i < halfEdges.size(); i++)
+        heIdx[halfEdges[i]] = i;
+    for (unsigned int i = 0; i < faces.size(); i++)
+        faceIdx[faces[i]] = i;
+
+    printf("%lu %lu %lu\n", vertices.size(), halfEdges.size()/2, faces.size());
 
     for (unsigned int i = 0; i < vertices.size(); i++){
         printf("%d %d %d\n", vertices[i]->x, vertices[i]->y, vertices[i]->z);
     }
 
     for (unsigned int i = 0; i < faces.size(); i++){
-        printf("%d\n", faces[i]->halfEdge->idx+1);
+        printf("%d\n", heIdx[faces[i]->halfEdge] + 1);
     }
 
     for (unsigned int i = 0; i < halfEdges.size(); i++){
-        printf("%d %d %d %d %d\n", halfEdges[i]->origin->idx+1, halfEdges[i]->twin->idx+1, halfEdges[i]->leftFace->idx+1, halfEdges[i]->next->idx+1, halfEdges[i]->prev->idx+1);
+        printf("%d %d %d %d %d\n",
+            vertIdx[halfEdges[i]->origin] + 1,
+            halfEdges[i]->twin ? (heIdx[halfEdges[i]->twin] + 1) : 0,
+            halfEdges[i]->leftFace ? (faceIdx[halfEdges[i]->leftFace] + 1) : 0,
+            halfEdges[i]->next ? (heIdx[halfEdges[i]->next] + 1) : 0,
+            halfEdges[i]->prev ? (heIdx[halfEdges[i]->prev] + 1) : 0
+        );
     }
 }
