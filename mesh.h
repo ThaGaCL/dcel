@@ -21,7 +21,7 @@ class Mesh {
             for (auto v : vertices) delete v;
             for (auto f : faces) delete f;
             for (auto he : halfEdges) delete he;
-        };
+        }
         void loadTetrahedron(Vertice* v1, Vertice* v2, Vertice* v3, Vertice* v4);
         void printDCEL();
         void removeFace(Face* f);
