@@ -96,6 +96,16 @@ void Mesh::defineFace(Vertice* v1, Vertice* v2, Vertice* v3, int idx){
     he3->next = he1; he3->prev = he2;
 }
 
+Face* Mesh::createNewFace(int idx){
+    Face* face = new Face;
+    face->halfEdge = nullptr; 
+    face->idx = idx;
+
+    faces.push_back(face);
+
+    return face;
+}
+
 void Mesh::findTwin(HalfEdge* he){
     HalfEdge* twin = NULL;
 
@@ -137,15 +147,7 @@ bool Mesh::faceDoesExist(int idx){
     return false;
 }
 
-Face* Mesh::createNewFace(int idx){
-    Face* face = new Face;
-    face->halfEdge = nullptr; 
-    face->idx = idx;
 
-    faces.push_back(face);
-
-    return face;
-}
 void Mesh::printHalfEdge(HalfEdge* he){
     if (!he) {
         std::cout << "HalfEdge: NULL" << std::endl;
@@ -324,6 +326,65 @@ void Mesh::removeFaceKeepHalfEdges(Face* f){
     f = nullptr;
 }
 
+void Mesh::unmergeFace(Face* quad) {
+    HalfEdge* he1 = quad->halfEdge;
+    HalfEdge* he2 = he1->next;
+    HalfEdge* he3 = he2->next;
+    HalfEdge* he4 = he3->next;
+
+    Face* newFace = createNewFace(nFaces++);
+    newFace->halfEdge = he1;
+    quad->halfEdge = he4;
+
+    HalfEdge* divisor = createHalfEdgeNode(he1->origin, newFace->idx, nHalfEdges++);
+    HalfEdge* divisorTwin = createHalfEdgeNode(he3->origin, quad->idx, nHalfEdges++);
+
+    divisor->twin = divisorTwin;
+    divisorTwin->twin = divisor;
+
+    he2->prev = he3;
+    he2->next = divisor;
+    divisor->prev = he2;
+    divisor->next = he3;
+    he3->prev = divisor;
+    he3->next = he2;
+
+    he4->prev = he1;
+    he4->next = divisorTwin;
+    divisorTwin->prev = he4;
+    divisorTwin->next = he1;
+    he1->prev = divisorTwin;
+    he1->next = he4;
+
+    he2->leftFace = newFace;
+    he3->leftFace = newFace;
+    he1->leftFace = quad;
+    he4->leftFace = quad;
+}
+
+
+void Mesh::triangulateFaces() {
+    vector<Face*> toTriangulate;
+    for (Face* face : faces) {
+        int count = 1;
+        HalfEdge* start = face->halfEdge;
+        HalfEdge* he = start->next;
+        while (he != start) {
+            count++;
+            he = he->next;
+        }
+
+        if (count > 3) {
+            toTriangulate.push_back(face);
+        }
+    }
+
+    for (Face* face : toTriangulate) {
+        unmergeFace(face);
+    }
+}
+
+
 void Mesh::printDCEL(){
     std::unordered_map<Vertice*, int> vertIdx;
     std::unordered_map<HalfEdge*, int> heIdx;
@@ -348,7 +409,7 @@ void Mesh::printDCEL(){
 
     for (unsigned int i = 0; i < halfEdges.size(); i++){
         printf("%d %d %d %d %d\n",
-            vertIdx[halfEdges[i]->origin] + 1,
+            halfEdges[i]->origin->idx + 1,
             halfEdges[i]->twin ? (heIdx[halfEdges[i]->twin] + 1) : 0,
             halfEdges[i]->leftFace ? (faceIdx[halfEdges[i]->leftFace] + 1) : 0,
             halfEdges[i]->next ? (heIdx[halfEdges[i]->next] + 1) : 0,

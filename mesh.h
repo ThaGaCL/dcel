@@ -33,7 +33,9 @@ class Mesh {
         Face* createNewFace(Vertice* v1, Vertice* v2, Vertice* v3);
         Face* createNewFace(Vertice* v1, Vertice* v2, Vertice* v3, Vertice* v4);
         void printHalfEdge(HalfEdge* he);
-        
+        void unmergeFace(Face* quad);
+        void triangulateFaces();
+
         Face* findFace(int idx);
         VERTICES getVertices() { return vertices; }
         FACES getFaces() { return faces; }
